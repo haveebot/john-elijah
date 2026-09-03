@@ -159,65 +159,79 @@ uniform float uAspect;
 uniform float uFit;
 uniform vec2 uPointer;
 uniform float uMobile;
+uniform float uHalfW;   // half-width of the sign in pre-aspect units
+uniform float uHalfH;   // half-height
 
-float hash(float n) { return fract(sin(n) * 43758.5453); }
+float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float noise(vec2 p) {
+  vec2 i = floor(p), f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash(i), hash(i + vec2(1, 0)), f.x), mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), f.x), f.y);
+}
 
 void main() {
-  // rays live in the same space as the mark: y centered on the wordmark (+0.12 * fit)
   vec2 p = vec2(vUv.x * uAspect, vUv.y - 0.12 * uFit);
-  float settled = smoothstep(4.4, 6.0, uTime);
-  float ignite = smoothstep(3.3, 4.2, uTime) * (1.0 - smoothstep(4.2, 5.6, uTime));
+  float settled = smoothstep(4.4, 6.4, uTime);
+  float ignite = smoothstep(3.3, 4.2, uTime) * (1.0 - smoothstep(4.2, 6.0, uTime));
 
-  // the mark's footprint: a soft lozenge the rays emanate from
-  vec2 e = p / vec2(1.55 * uFit, 0.42 * uFit + 0.18 * uMobile);
-  float inMark = 1.0 - smoothstep(0.55, 1.05, length(e));
-  float r = length(p);
-  float ang = atan(p.y, p.x);
+  // light comes off the whole sign, not a point: measure from the sign's bar
+  vec2 q = vec2(clamp(p.x, -uHalfW, uHalfW), clamp(p.y, -uHalfH * 0.6, uHalfH * 0.6));
+  vec2 v = p - q;
+  float dist = length(v);
+  float ang = atan(v.y, v.x + 1e-4);
 
-  // marquee rays: several bands of beams rotating at different speeds, each shimmering
-  float rays = 0.0;
-  rays += pow(max(sin(ang * 14.0 + uTime * 0.35), 0.0), 6.0) * 0.55;
-  rays += pow(max(sin(ang * 22.0 - uTime * 0.22 + 1.7), 0.0), 9.0) * 0.45;
-  rays += pow(max(sin(ang * 9.0 + uTime * 0.12 + 0.6), 0.0), 4.0) * 0.35;
-  // slow breathing + individual beam flicker
-  rays *= 0.75 + 0.25 * sin(uTime * 0.7 + ang * 3.0);
-  // radial falloff: strong at the letters, dying toward the frame edge
-  float fall = smoothstep(2.2, 0.35, r) * (0.35 + 0.65 * (1.0 - inMark));
-  float glowCore = inMark * (0.10 + 0.05 * sin(uTime * 1.3));
+  // five broad, soft shafts drifting slowly; a sixth slow one crosses the other way
+  float shafts = 0.0;
+  shafts += pow(0.5 + 0.5 * cos(ang * 5.0 + uTime * 0.09), 5.0) * 0.45;
+  shafts += pow(0.5 + 0.5 * cos(ang * 3.0 - uTime * 0.06 + 1.1), 6.0) * 0.35;
+  shafts += pow(0.5 + 0.5 * cos(ang * 8.0 + uTime * 0.04 + 2.3), 9.0) * 0.20;
+  // slow haze in the beams so they read as light in air, not vector strokes
+  float haze = 0.75 + 0.25 * noise(vec2(ang * 3.0, dist * 1.5 - uTime * 0.12));
+  // fall off with distance from the sign; nothing hard near it
+  float fall = smoothstep(2.4, 0.15, dist) * smoothstep(0.0, 0.25, dist);
+  // a soft bloom hugging the letters
+  float hug = smoothstep(0.55, 0.0, dist) * 0.10;
 
-  // pointer: a beam follows the cursor across the sign
-  float pAng = atan(uPointer.y - 0.12 * uFit, uPointer.x);
+  // a beam that leans toward the cursor
+  float pAng = atan(uPointer.y - 0.12 * uFit - q.y, uPointer.x - q.x + 1e-4);
   float d = abs(mod(ang - pAng + 3.14159, 6.28318) - 3.14159);
-  float cursorBeam = smoothstep(0.35, 0.0, d) * smoothstep(2.4, 0.4, r) * 0.6;
+  float cursorBeam = pow(smoothstep(0.7, 0.0, d), 2.0) * fall * 0.35;
 
   vec3 brass = vec3(0.851, 0.643, 0.255);
   vec3 cream = vec3(0.953, 0.918, 0.847);
-  vec3 col = mix(brass, cream, 0.25) * (rays * fall * 0.55 + glowCore + cursorBeam * 0.5);
-  col += cream * ignite * inMark * 0.25;                       // the flash when the sign turns on
-  float a = settled * 0.85 + ignite * 0.6;
-  gl_FragColor = vec4(col * a, 1.0);
+  vec3 tone = mix(brass, cream, 0.3);
+  float breath = 0.85 + 0.15 * sin(uTime * 0.45);
+  float amt = (shafts * haze * fall * 0.42 + hug + cursorBeam) * breath;
+  vec3 col = tone * amt * settled + cream * ignite * smoothstep(0.7, 0.0, dist) * 0.18;
+  // additive light only: alpha stays 0 so the photo underneath is never covered
+  gl_FragColor = vec4(col, 0.0);
 }
 `;
 
 function buildBuffers(lines: string[], font: string, inkCount: number, dustCount: number) {
-  const W = 640;
-  const H = lines.length > 1 ? 360 : 150;
+  const W = 800;
   const cv = document.createElement("canvas");
+  const ctx = cv.getContext("2d", { willReadFrequently: true })!;
+  // measure at 100px, scale so the widest line is 88% of W; canvas height from real ascent/descent
+  ctx.font = `600 100px ${font}`;
+  const m100 = lines.map((l) => ctx.measureText(l));
+  const widest = Math.max(...m100.map((m) => m.width), 1);
+  const size = Math.floor((100 * (W * 0.88)) / widest);
+  ctx.font = `600 ${size}px ${font}`;
+  const ms = lines.map((l) => ctx.measureText(l));
+  const asc = Math.max(...ms.map((m) => m.actualBoundingBoxAscent || size * 0.75));
+  const desc = Math.max(...ms.map((m) => m.actualBoundingBoxDescent || size * 0.05));
+  const lineH = (asc + desc) * 1.12;
+  const H = Math.ceil(lineH * lines.length + size * 0.3);
   cv.width = W;
   cv.height = H;
-  const ctx = cv.getContext("2d", { willReadFrequently: true })!;
+  ctx.font = `600 ${size}px ${font}`;
   ctx.fillStyle = "#fff";
   ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  // size the type to the canvas: measure at 100px, scale so the widest line fills 92% of W
-  ctx.font = `600 100px ${font}`;
-  const widest = Math.max(...lines.map((l) => ctx.measureText(l).width));
-  const size = Math.floor((100 * (W * 0.92)) / Math.max(widest, 1));
-  ctx.font = `600 ${size}px ${font}`;
-  const lineH = size * 1.05;
+  ctx.textBaseline = "alphabetic";
+  const top = (H - lineH * lines.length) / 2;
   lines.forEach((line, i) => {
-    const y = lines.length > 1 ? H / 2 - ((lines.length - 1) * lineH) / 2 + i * lineH : H / 2;
-    ctx.fillText(line, W / 2, y);
+    ctx.fillText(line, W / 2, top + i * lineH + asc + (lineH - asc - desc) / 2);
   });
   const data = ctx.getImageData(0, 0, W, H).data;
 
@@ -231,6 +245,8 @@ function buildBuffers(lines: string[], font: string, inkCount: number, dustCount
   const orders = new Float32Array(total);
   const kinds = new Float32Array(total);
   const SCALE = 1.55;
+  const halfW = SCALE;
+  const halfH = SCALE * (H / W);
 
   for (let i = 0; i < inkCount; i++) {
     const [x, y] = candidates[(Math.random() * candidates.length) | 0];
@@ -254,7 +270,7 @@ function buildBuffers(lines: string[], font: string, inkCount: number, dustCount
     orders[i] = Math.random();
     kinds[i] = 1;
   }
-  return { targets, seeds, orders, kinds, total };
+  return { targets, seeds, orders, kinds, total, halfW, halfH, size, W, H };
 }
 
 export function StageIdent({ onReady }: { onReady?: (ready: boolean) => void }) {
@@ -287,7 +303,8 @@ export function StageIdent({ onReady }: { onReady?: (ready: boolean) => void }) 
       const DUST = isMobile ? 180 : 420;
       const built = buildBuffers(lines, `${font}, Impact, sans-serif`, INK, DUST);
       if (!built) return;
-      const { targets, seeds, orders, kinds, total } = built;
+      const { targets, seeds, orders, kinds, total, halfW, halfH } = built;
+      (window as unknown as { __jeIdent?: unknown }).__jeIdent = { lines, size: built.size, W: built.W, H: built.H, halfW, halfH };
 
       const compile = (type: number, src: string) => {
         const sh = gl.createShader(type)!;
@@ -313,6 +330,7 @@ export function StageIdent({ onReady }: { onReady?: (ready: boolean) => void }) 
       const rayPos = gl.getAttribLocation(rayProg, "aPos");
       const rU = (n: string) => gl.getUniformLocation(rayProg, n);
       const rTime = rU("uTime"), rAspect = rU("uAspect"), rFit = rU("uFit"), rPointer = rU("uPointer"), rMobile = rU("uMobile");
+      const rHalfW = rU("uHalfW"), rHalfH = rU("uHalfH");
 
       gl.useProgram(prog);
       const attrs: { buf: WebGLBuffer; loc: number; size: number }[] = [];
@@ -350,7 +368,7 @@ export function StageIdent({ onReady }: { onReady?: (ready: boolean) => void }) 
         canvas.height = Math.round(canvas.clientHeight * dpr);
         gl.viewport(0, 0, canvas.width, canvas.height);
         aspect = canvas.width / Math.max(canvas.height, 1);
-        fit = Math.min(1, (0.92 * aspect) / 1.55);
+        fit = Math.min(1, (0.92 * aspect) / 1.55, 0.78 / Math.max(halfH, 0.01));
       };
       resize();
       window.addEventListener("resize", resize);
@@ -399,8 +417,12 @@ export function StageIdent({ onReady }: { onReady?: (ready: boolean) => void }) 
           gl.uniform1f(rFit, fit);
           gl.uniform2f(rPointer, px, py);
           gl.uniform1f(rMobile, isMobile ? 1 : 0);
+          gl.uniform1f(rHalfW, halfW * fit);
+          gl.uniform1f(rHalfH, halfH * fit);
+          gl.blendFuncSeparate(gl.ONE, gl.ONE, gl.ZERO, gl.ONE); // add light, never cover the photo
           gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
           gl.disableVertexAttribArray(rayPos);
+          gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
         }
 
         // 2) the specks

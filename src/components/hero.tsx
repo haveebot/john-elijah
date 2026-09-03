@@ -25,7 +25,7 @@ export function Hero({ photo }: { photo: { url: string; alt: string } | null }) 
         <div className="absolute inset-0 bg-canvas-raised" aria-hidden />
       )}
       <div className="stage-veil absolute inset-0" aria-hidden />
-      <div className="absolute inset-0 bg-canvas/35" aria-hidden />
+      <div className="absolute inset-0 bg-canvas/40" aria-hidden />
 
       {/* the ident lives in the upper ~70% of the frame */}
       <div className="absolute inset-x-0 top-0 h-[72%]">
