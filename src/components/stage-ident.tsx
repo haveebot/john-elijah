@@ -1,24 +1,22 @@
 "use client";
 
 /**
- * "Stage Light" — the homepage ident.
+ * "Name in Lights" — the homepage ident.
  *
- * Abstract over literal (org law): no objects, no scene. Brass stage-light
- * dust drifts over the hero photo, converges to form the wordmark (a brand
- * fragment formed by the field), ignites with a specular sweep, then settles
- * into a living, swaying mark with two slow currents running through it.
- * Pointer scatters nearby dust and repaints it coral/cream; drag pulls it
- * into orbit; release springs it home. Double-click replays.
+ * Brass stage-light specks drift over the hero photo from the first frame,
+ * gather into the wordmark, and the sign lights: every speck becomes a marquee
+ * bulb blinking on its own clock. The light rays are NOT drawn from a formula —
+ * they are a radial-blur post-process of the sign's own glow, computed every
+ * frame from the bulbs, so they stream out of the letters, flicker with them,
+ * and fade in as the name lights instead of switching on. A burst of exposure
+ * fires the moment the letters lock.
  *
- * Four acts: Breath (0–1.2s dust only) → Growth (1.2–3.6s letters form)
- * → Ignition (3.4–5s sweep + bloom) → Resolve (settle, sway).
+ * Pipeline per frame: specks → offscreen texture → one full-frame pass that
+ * adds (specks + radial light shafts) to the photo. Additive only; the photo is
+ * never covered. Pointer scatters/repaints nearby specks; drag orbits them;
+ * double-click replays. Reduced motion / no WebGL → the HTML wordmark shows.
  *
- * Reduced-motion or no WebGL → the component renders nothing and the HTML
- * wordmark (always present for SEO/a11y) simply shows.
- *
- * Cost-shape: DPR capped 1.6, particle counts halved on phones, one draw
- * call, no external libs, no textures — targets come from an offscreen
- * canvas rendering the wordmark in the site's own font.
+ * Cost-shape: DPR cap 1.5, half-res light texture, 2 draws, no libraries.
  */
 
 import { useEffect, useRef, useState } from "react";
@@ -32,6 +30,7 @@ uniform mediump float uTime;
 uniform float uAspect;
 uniform float uDPR;
 uniform float uFit;
+uniform float uSizeScale;
 uniform mediump vec2 uPointer;
 uniform mediump float uScatter;
 uniform mediump float uGrab;
@@ -48,24 +47,26 @@ void main() {
   vKind = aKind; vOrder = aOrder; vSeed = aSeed.z; vCustom = 0.0;
 
   if (aKind > 0.5) {
-    // dust: slow upward drift like heat off a stage
     vec2 pos = aTarget;
     pos.x += sin(uTime * (0.05 + aSeed.z * 0.08) + aSeed.x * 6.2831) * 0.30;
     pos.y += mod(uTime * (0.02 + aSeed.z * 0.03) + aSeed.y * 2.0, 2.4) - 1.2;
     vGlow = 0.0;
     gl_Position = vec4(pos.x, pos.y, 0.0, 1.0);
-    gl_PointSize = (8.0 + aSeed.z * 20.0) * uDPR;
+    gl_PointSize = (8.0 + aSeed.z * 20.0) * uDPR * uSizeScale;
     return;
   }
 
   vec2 target = aTarget * uFit;
-  float dAssemble = 0.15 + aOrder * 1.7;
-  float tA = clamp((uTime - dAssemble) / 1.1, 0.0, 1.0);
+  // stagger across the mark left→right; everything is locked by ~2.3s
+  float dAssemble = 0.1 + aOrder * 1.2;
+  float tA = clamp((uTime - dAssemble) / 1.0, 0.0, 1.0);
   float e = easeOutCubic(tA);
   vec2 scatter0 = target + aSeed.xy * (1.5 + aSeed.z * 1.4) + vec2(0.0, -0.9);
-  vec2 pos = mix(scatter0, target, e);
+  // alive before assembly: the scattered specks wander, never sit still
+  vec2 wander = vec2(sin(uTime * 0.9 + aSeed.z * 31.0), cos(uTime * 0.8 + aSeed.z * 23.0)) * 0.06;
+  vec2 pos = mix(scatter0 + wander, target, e);
 
-  float idle = smoothstep(3.2, 4.2, uTime);
+  float idle = smoothstep(2.3, 3.2, uTime);
   pos += idle * vec2(sin(uTime * 0.8 + aSeed.z * 40.0), cos(uTime * 0.7 + aSeed.z * 34.0)) * 0.0014;
   float sway = sin(uTime * 0.2) * 0.014 * idle;
   pos.x += sway * pos.y;
@@ -86,7 +87,7 @@ void main() {
 
   vGlow = (1.0 - tA) * 0.9 + force * 0.9;
   gl_Position = vec4(pos.x / uAspect, pos.y, 0.0, 1.0);
-  gl_PointSize = (2.0 + aSeed.z * 2.3 + vGlow * 2.2) * uDPR;
+  gl_PointSize = (2.0 + aSeed.z * 2.3 + vGlow * 2.2) * uDPR * uSizeScale;
 }
 `;
 
@@ -117,12 +118,12 @@ void main() {
     float blink = pow(max(sin(uTime * (0.2 + fract(vSeed * 13.7) * 0.4) + vSeed * 90.0), 0.0), 26.0);
     vec3 col = brass * (0.55 + uBurst * 0.7 + blink * 1.4);
     float alpha = soft * (0.05 * tw * (1.0 + uBurst) + blink * 0.35);
-    gl_FragColor = vec4(col, alpha);
+    gl_FragColor = vec4(col * alpha, alpha);
     return;
   }
 
   float soft = smoothstep(0.5, 0.05, d);
-  float settled = smoothstep(3.3, 4.4, uTime);
+  float settled = smoothstep(2.4, 3.4, uTime);
   float cur1 = smoothstep(0.30, 0.0, abs(vOrder - fract(uTime * 0.05)));
   float cur2 = smoothstep(0.24, 0.0, abs((1.0 - vOrder) - fract(uTime * 0.035 + 0.5)));
   float rest = settled * (0.30 + 0.35 * cur1 + 0.20 * cur2) + (1.0 - settled) * 0.12;
@@ -135,84 +136,58 @@ void main() {
   col = mix(col, custom, clamp(vCustom, 0.0, 1.0));
   col = mix(col, pigment, vGlow * 0.35);
 
-  // marquee bulbs: after ignition each speck blinks on its own clock, brighter in brass
+  // marquee bulbs: after the sign lights, each speck blinks on its own clock
   float bulb = pow(max(sin(uTime * (1.6 + fract(vSeed * 9.31) * 2.4) + vSeed * 120.0), 0.0), 9.0);
   float lights = settled * bulb;
   col = mix(col, mix(brass, cream, 0.35), lights * 0.8);
   float radiate = 1.0 + settled * (0.30 * cur1 + 0.18 * cur2) + vCustom * 0.9 + lights * 1.6;
   float alpha = soft * (0.74 + vGlow * 0.26 + lights * 0.2);
-  gl_FragColor = vec4(col * (0.92 + vGlow * 0.6 + uBurst * 0.8) * radiate, alpha);
+  vec3 rgb = col * (0.92 + vGlow * 0.6 + uBurst * 0.8) * radiate;
+  // premultiplied output into the light texture
+  gl_FragColor = vec4(rgb * alpha, alpha);
 }
 `;
 
-const RAY_VERT = `
+// full-frame composite: the specks + radial light shafts computed from them
+const QUAD_VERT = `
 attribute vec2 aPos;
 varying vec2 vUv;
-void main() { vUv = aPos; gl_Position = vec4(aPos, 0.0, 1.0); }
+void main() { vUv = aPos * 0.5 + 0.5; gl_Position = vec4(aPos, 0.0, 1.0); }
 `;
 
-const RAY_FRAG = `
+const COMPOSITE_FRAG = `
 precision mediump float;
 varying vec2 vUv;
-uniform float uTime;
+uniform sampler2D uLight;
+uniform vec2 uCenter;      // sign centre in uv
+uniform float uExposure;   // ray strength (steady ~0.5, burst ~1.6)
+uniform float uDecay;
 uniform float uAspect;
-uniform float uFit;
-uniform vec2 uPointer;
-uniform float uMobile;
-uniform float uHalfW;
-uniform float uHalfH;
+uniform float uTime;
 
-float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
-float noise(vec2 p) {
-  vec2 i = floor(p), f = fract(p);
-  f = f * f * (3.0 - 2.0 * f);
-  return mix(mix(hash(i), hash(i + vec2(1, 0)), f.x), mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), f.x), f.y);
-}
+const int SAMPLES = 28;
 
 void main() {
-  // radial from the sign's centre — the OG card look
-  vec2 p = vec2(vUv.x * uAspect, vUv.y - 0.12 * uFit);
-  float r = length(p);
-  float ang = atan(p.y, p.x + 1e-4);
+  vec3 specks = texture2D(uLight, vUv).rgb;
 
-  // timeline: letters lock ~3.0s → burst 3.0–4.4s → steady after
-  float landed = smoothstep(2.95, 3.25, uTime);
-  float burst = landed * (1.0 - smoothstep(3.1, 4.6, uTime));
-  float steady = smoothstep(3.4, 5.2, uTime);
-
-  // three ray families, slow drift, soft edges (the OG's families, tamed)
-  float rays = 0.0;
-  rays += pow(max(sin(ang * 14.0 + uTime * 0.05 + 0.4), 0.0), 5.0) * 0.55;
-  rays += pow(max(sin(ang * 22.0 - uTime * 0.03 + 1.7), 0.0), 7.0) * 0.45;
-  rays += pow(max(sin(ang * 9.0 + uTime * 0.02 + 0.6), 0.0), 3.5) * 0.35;
-  // haze so the beams read as light in air
-  rays *= 0.7 + 0.3 * noise(vec2(ang * 4.0, r * 2.0 - uTime * 0.15));
-  // per-beam slow flicker
-  rays *= 0.85 + 0.15 * sin(uTime * 0.6 + ang * 5.0);
-
-  // the sign's footprint: rays start just outside the letters, fade toward the frame edge
-  vec2 e = p / vec2(max(uHalfW, 0.2), max(uHalfH, 0.2));
-  float inMark = 1.0 - smoothstep(0.75, 1.15, length(e));
-  float fall = smoothstep(2.8, 0.25, r);
-  float glowCore = inMark * 0.10;
-
-  // cursor: a beam leans toward the pointer
-  float pAng = atan(uPointer.y - 0.12 * uFit, uPointer.x + 1e-4);
-  float d = abs(mod(ang - pAng + 3.14159, 6.28318) - 3.14159);
-  float cursorBeam = pow(smoothstep(0.6, 0.0, d), 2.0) * fall * 0.35;
-
-  // the burst: rays flare hard and a ring of light rolls out from the sign
-  float ringR = (uTime - 2.95) * 1.6;
-  float ring = smoothstep(0.35, 0.0, abs(r - ringR)) * burst;
-  float flare = rays * burst * 2.4 + ring * 0.9 + inMark * burst * 0.35;
+  // radial blur of the sign's own light toward/away from its centre
+  vec2 delta = (vUv - uCenter) / float(SAMPLES) * 0.92;
+  vec2 uv = vUv;
+  float w = 1.0;
+  vec3 rays = vec3(0.0);
+  for (int i = 0; i < SAMPLES; i++) {
+    uv -= delta;
+    rays += texture2D(uLight, uv).rgb * w;
+    w *= uDecay;
+  }
+  rays /= float(SAMPLES);
+  // slow shimmer along the beams so the light breathes
+  float ang = atan((vUv.y - uCenter.y), (vUv.x - uCenter.x) * uAspect + 1e-4);
+  float shimmer = 0.85 + 0.15 * sin(uTime * 0.6 + ang * 6.0);
 
   vec3 brass = vec3(0.851, 0.643, 0.255);
-  vec3 cream = vec3(0.953, 0.918, 0.847);
-  vec3 tone = mix(brass, cream, 0.25);
-  float breath = 0.9 + 0.1 * sin(uTime * 0.4);
-  float steadyAmt = (rays * fall * (0.55 + 0.45 * (1.0 - inMark)) * 0.62 + glowCore + cursorBeam) * breath * steady;
-  vec3 col = tone * steadyAmt + mix(tone, cream, 0.5) * flare;
-  gl_FragColor = vec4(col, 0.0);
+  vec3 col = specks + rays * uExposure * shimmer * mix(vec3(1.0), brass, 0.35);
+  gl_FragColor = vec4(col, 0.0);   // additive light only; the photo stays underneath
 }
 `;
 
@@ -220,7 +195,6 @@ function buildBuffers(lines: string[], font: string, inkCount: number, dustCount
   const W = 800;
   const cv = document.createElement("canvas");
   const ctx = cv.getContext("2d", { willReadFrequently: true })!;
-  // measure at 100px, scale so the widest line is 88% of W; canvas height from real ascent/descent
   ctx.font = `600 100px ${font}`;
   const m100 = lines.map((l) => ctx.measureText(l));
   const widest = Math.max(...m100.map((m) => m.width), 1);
@@ -290,7 +264,7 @@ export function StageIdent({ onReady }: { onReady?: (ready: boolean) => void }) 
     if (reduced) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const gl = canvas.getContext("webgl", { alpha: true, antialias: false });
+    const gl = canvas.getContext("webgl", { alpha: true, antialias: false, premultipliedAlpha: true });
     if (!gl) return;
 
     let raf = 0;
@@ -299,7 +273,6 @@ export function StageIdent({ onReady }: { onReady?: (ready: boolean) => void }) 
 
     const start = async () => {
       const font = getComputedStyle(document.documentElement).getPropertyValue("--font-oswald").trim() || "Oswald";
-      // the page already loaded Oswald for the nav wordmark; never wait more than 150ms for it
       await Promise.race([document.fonts.load(`600 92px ${font}`).catch(() => null), new Promise((r) => setTimeout(r, 150))]);
       if (disposed) return;
       const isMobile = window.innerWidth < 768;
@@ -308,8 +281,8 @@ export function StageIdent({ onReady }: { onReady?: (ready: boolean) => void }) 
       const DUST = isMobile ? 180 : 420;
       const built = buildBuffers(lines, `${font}, Impact, sans-serif`, INK, DUST);
       if (!built) return;
-      const { targets, seeds, orders, kinds, total, halfW, halfH } = built;
-      (window as unknown as { __jeIdent?: unknown }).__jeIdent = { lines, size: built.size, W: built.W, H: built.H, halfW, halfH };
+      const { targets, seeds, orders, kinds, total, halfH } = built;
+      (window as unknown as { __jeIdent?: unknown }).__jeIdent = { lines, size: built.size, W: built.W, H: built.H, halfW: built.halfW, halfH };
 
       const compile = (type: number, src: string) => {
         const sh = gl.createShader(type)!;
@@ -317,63 +290,67 @@ export function StageIdent({ onReady }: { onReady?: (ready: boolean) => void }) 
         gl.compileShader(sh);
         return sh;
       };
-      const prog = gl.createProgram()!;
-      gl.attachShader(prog, compile(gl.VERTEX_SHADER, VERT));
-      gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, FRAG));
-      gl.linkProgram(prog);
-      if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return;
+      const link = (v: string, f: string) => {
+        const p = gl.createProgram()!;
+        gl.attachShader(p, compile(gl.VERTEX_SHADER, v));
+        gl.attachShader(p, compile(gl.FRAGMENT_SHADER, f));
+        gl.linkProgram(p);
+        return gl.getProgramParameter(p, gl.LINK_STATUS) ? p : null;
+      };
+      const prog = link(VERT, FRAG);
+      const comp = link(QUAD_VERT, COMPOSITE_FRAG);
+      if (!prog || !comp) return;
 
-      // ── rays program (full-frame quad, drawn first, additive) ──
-      const rayProg = gl.createProgram()!;
-      gl.attachShader(rayProg, compile(gl.VERTEX_SHADER, RAY_VERT));
-      gl.attachShader(rayProg, compile(gl.FRAGMENT_SHADER, RAY_FRAG));
-      gl.linkProgram(rayProg);
-      const raysOk = Boolean(gl.getProgramParameter(rayProg, gl.LINK_STATUS));
-      const quadBuf = gl.createBuffer();
-      gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
-      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
-      const rayPos = gl.getAttribLocation(rayProg, "aPos");
-      const rU = (n: string) => gl.getUniformLocation(rayProg, n);
-      const rTime = rU("uTime"), rAspect = rU("uAspect"), rFit = rU("uFit"), rPointer = rU("uPointer"), rMobile = rU("uMobile");
-      const rHalfW = rU("uHalfW"), rHalfH = rU("uHalfH");
-
-      gl.useProgram(prog);
+      // speck attributes
       const attrs: { buf: WebGLBuffer; loc: number; size: number }[] = [];
-      const buf = (data: Float32Array, name: string, size: number) => {
+      const mk = (data: Float32Array, name: string, size: number) => {
         const b = gl.createBuffer()!;
         gl.bindBuffer(gl.ARRAY_BUFFER, b);
         gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
-        const loc = gl.getAttribLocation(prog, name);
-        attrs.push({ buf: b, loc, size });
+        attrs.push({ buf: b, loc: gl.getAttribLocation(prog, name), size });
       };
-      buf(targets, "aTarget", 2);
-      buf(seeds, "aSeed", 3);
-      buf(orders, "aOrder", 1);
-      buf(kinds, "aKind", 1);
-      const bindPoints = () => {
-        for (const a of attrs) {
-          gl.bindBuffer(gl.ARRAY_BUFFER, a.buf);
-          gl.enableVertexAttribArray(a.loc);
-          gl.vertexAttribPointer(a.loc, a.size, gl.FLOAT, false, 0, 0);
-        }
+      mk(targets, "aTarget", 2);
+      mk(seeds, "aSeed", 3);
+      mk(orders, "aOrder", 1);
+      mk(kinds, "aKind", 1);
+      const quad = gl.createBuffer()!;
+      gl.bindBuffer(gl.ARRAY_BUFFER, quad);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+      const aPos = gl.getAttribLocation(comp, "aPos");
+
+      const u = (p: WebGLProgram, n: string) => gl.getUniformLocation(p, n);
+      const U = {
+        time: u(prog, "uTime"), aspect: u(prog, "uAspect"), dpr: u(prog, "uDPR"), burst: u(prog, "uBurst"), fit: u(prog, "uFit"),
+        sizeScale: u(prog, "uSizeScale"), pointer: u(prog, "uPointer"), scatter: u(prog, "uScatter"), grab: u(prog, "uGrab"), paint: u(prog, "uPaint"),
       };
+      const C = { light: u(comp, "uLight"), center: u(comp, "uCenter"), exposure: u(comp, "uExposure"), decay: u(comp, "uDecay"), aspect: u(comp, "uAspect"), time: u(comp, "uTime") };
 
-      const u = (name: string) => gl.getUniformLocation(prog, name);
-      const uTime = u("uTime"), uAspect = u("uAspect"), uDPR = u("uDPR"), uBurst = u("uBurst"), uFit = u("uFit");
-      const uPointer = u("uPointer"), uScatter = u("uScatter"), uGrab = u("uGrab"), uPaint = u("uPaint");
+      // offscreen light texture (half-res)
+      const fbo = gl.createFramebuffer()!;
+      const lightTex = gl.createTexture()!;
+      gl.bindTexture(gl.TEXTURE_2D, lightTex);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, lightTex, 0);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
-      gl.enable(gl.BLEND);
-      gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
-
-      const dpr = Math.min(window.devicePixelRatio || 1, 1.6);
+      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+      const LIGHT_SCALE = 0.5;
       let aspect = 1;
       let fit = 1;
+      let lw = 1, lh = 1;
       const resize = () => {
         canvas.width = Math.round(canvas.clientWidth * dpr);
         canvas.height = Math.round(canvas.clientHeight * dpr);
-        gl.viewport(0, 0, canvas.width, canvas.height);
         aspect = canvas.width / Math.max(canvas.height, 1);
         fit = Math.min(1, (0.92 * aspect) / 1.55, 0.78 / Math.max(halfH, 0.01));
+        lw = Math.max(1, Math.round(canvas.width * LIGHT_SCALE));
+        lh = Math.max(1, Math.round(canvas.height * LIGHT_SCALE));
+        gl.bindTexture(gl.TEXTURE_2D, lightTex);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, lw, lh, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
       };
       resize();
       window.addEventListener("resize", resize);
@@ -396,54 +373,73 @@ export function StageIdent({ onReady }: { onReady?: (ready: boolean) => void }) 
 
       setReady(true);
       onReady?.(true);
-      startedAt = performance.now(); // the clock starts when the first frame can draw
+      startedAt = performance.now();
 
       const frame = () => {
         if (disposed) return;
         const t = (performance.now() - startedAt) / 1000;
-        const burst = Math.max(0, Math.sin(Math.min(Math.max(t - 3.4, 0) / 1.5, 1) * Math.PI)) * (t < 5.6 ? 1 : 0.1 + 0.08 * Math.sin(t * 0.35));
+        // JS burst envelope: letters lock ~2.3s → flare → settle
+        const burst = Math.max(0, Math.sin(Math.min(Math.max(t - 2.2, 0) / 1.4, 1) * Math.PI)) * (t < 3.8 ? 1 : 0.1 + 0.08 * Math.sin(t * 0.35));
+        // ray exposure: nothing before the sign lights, big burst at landing, steady after
+        const lit = Math.min(1, Math.max(0, (t - 2.2) / 1.1));
+        const steady = 0.55 + 0.08 * Math.sin(t * 0.4);
+        const flare = Math.max(0, Math.sin(Math.min(Math.max(t - 2.25, 0) / 1.6, 1) * Math.PI)) * 1.3;
+        const exposure = lit * steady + flare;
+        const decay = 0.955 + 0.02 * Math.min(1, flare);
+
         scatterNow += (scatterTarget - scatterNow) * (scatterTarget > scatterNow ? 0.3 : 0.07);
         grabNow += (grabTarget - grabNow) * (grabTarget > grabNow ? 0.38 : 0.16);
         if (scatterTarget === 0 && grabTarget === 0 && Math.max(scatterNow, grabNow) < 0.35) paintNow *= 0.984;
         if (scatterNow < 0.002) scatterNow = 0;
         if (grabNow < 0.002) grabNow = 0;
 
+        // 1) specks → light texture (premultiplied, additive)
+        gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+        gl.viewport(0, 0, lw, lh);
         gl.clearColor(0, 0, 0, 0);
         gl.clear(gl.COLOR_BUFFER_BIT);
-
-        // 1) light rays off the sign (additive, under the specks)
-        if (raysOk) {
-          gl.useProgram(rayProg);
-          for (const a of attrs) gl.disableVertexAttribArray(a.loc);
-          gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
-          gl.enableVertexAttribArray(rayPos);
-          gl.vertexAttribPointer(rayPos, 2, gl.FLOAT, false, 0, 0);
-          gl.uniform1f(rTime, t);
-          gl.uniform1f(rAspect, aspect);
-          gl.uniform1f(rFit, fit);
-          gl.uniform2f(rPointer, px, py);
-          gl.uniform1f(rMobile, isMobile ? 1 : 0);
-          gl.uniform1f(rHalfW, halfW * fit);
-          gl.uniform1f(rHalfH, halfH * fit);
-          gl.blendFuncSeparate(gl.ONE, gl.ONE, gl.ZERO, gl.ONE); // add light, never cover the photo
-          gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-          gl.disableVertexAttribArray(rayPos);
-          gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
-        }
-
-        // 2) the specks
+        gl.enable(gl.BLEND);
+        gl.blendFunc(gl.ONE, gl.ONE);
         gl.useProgram(prog);
-        bindPoints();
-        gl.uniform1f(uTime, t);
-        gl.uniform1f(uAspect, aspect);
-        gl.uniform1f(uDPR, dpr);
-        gl.uniform1f(uBurst, burst);
-        gl.uniform1f(uFit, fit);
-        gl.uniform2f(uPointer, px, py);
-        gl.uniform1f(uScatter, scatterNow);
-        gl.uniform1f(uGrab, grabNow);
-        gl.uniform1f(uPaint, paintNow);
+        for (const a of attrs) {
+          gl.bindBuffer(gl.ARRAY_BUFFER, a.buf);
+          gl.enableVertexAttribArray(a.loc);
+          gl.vertexAttribPointer(a.loc, a.size, gl.FLOAT, false, 0, 0);
+        }
+        gl.uniform1f(U.time, t);
+        gl.uniform1f(U.aspect, aspect);
+        gl.uniform1f(U.dpr, dpr);
+        gl.uniform1f(U.burst, burst);
+        gl.uniform1f(U.fit, fit);
+        gl.uniform1f(U.sizeScale, LIGHT_SCALE);
+        gl.uniform2f(U.pointer, px, py);
+        gl.uniform1f(U.scatter, scatterNow);
+        gl.uniform1f(U.grab, grabNow);
+        gl.uniform1f(U.paint, paintNow);
         gl.drawArrays(gl.POINTS, 0, total);
+        for (const a of attrs) gl.disableVertexAttribArray(a.loc);
+
+        // 2) composite: specks + radial light shafts from them, added onto the photo
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        gl.viewport(0, 0, canvas.width, canvas.height);
+        gl.clearColor(0, 0, 0, 0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        gl.blendFuncSeparate(gl.ONE, gl.ONE, gl.ZERO, gl.ONE);
+        gl.useProgram(comp);
+        gl.bindBuffer(gl.ARRAY_BUFFER, quad);
+        gl.enableVertexAttribArray(aPos);
+        gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, lightTex);
+        gl.uniform1i(C.light, 0);
+        gl.uniform2f(C.center, 0.5, 0.5 + (0.12 * fit) / 2);
+        gl.uniform1f(C.exposure, exposure);
+        gl.uniform1f(C.decay, decay);
+        gl.uniform1f(C.aspect, aspect);
+        gl.uniform1f(C.time, t);
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+        gl.disableVertexAttribArray(aPos);
+
         raf = requestAnimationFrame(frame);
       };
       raf = requestAnimationFrame(frame);
