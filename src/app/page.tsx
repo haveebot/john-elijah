@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
-import { SiteNav, SiteFooter, Wordmark, LoneStarBadge } from "@/components/site-chrome";
+import { SiteNav, SiteFooter } from "@/components/site-chrome";
+import { Hero } from "@/components/hero";
 import { ShowRow, ResidencyRow } from "@/components/show-row";
 import { SubscribeForm } from "@/components/subscribe-form";
 import { SITE } from "@/lib/site";
@@ -32,39 +33,8 @@ export default async function HomePage() {
       <div className="stage-hairline" aria-hidden />
       <SiteNav />
       <main>
-        {/* ── Act I: the stage — full-frame photo, wordmark rising out of the light ── */}
-        <section className="relative flex min-h-[92vh] flex-col justify-end overflow-hidden">
-          {hero ? (
-            <Image
-              src={hero.blob_url}
-              alt={hero.alt || `${SITE.name} on stage`}
-              fill
-              priority
-              sizes="100vw"
-              className="hero-drift object-cover object-center"
-            />
-          ) : (
-            <div className="absolute inset-0 bg-canvas-raised" aria-hidden />
-          )}
-          <div className="stage-veil absolute inset-0" aria-hidden />
-          <div className="relative mx-auto w-full max-w-6xl px-5 pb-16 pt-40 md:pb-24">
-            <p className="script text-3xl text-brass md:text-5xl">Blues &amp; soul, live</p>
-            <h1 className="mt-2">
-              <Wordmark size="xl" />
-            </h1>
-            <LoneStarBadge size="lg" className="mt-5" />
-            <p className="mt-4 max-w-xl text-lg leading-relaxed text-ink-dim">
-              Originals rooted in blues and soul, out of {SITE.origin}. Full band to solo
-              acoustic — anywhere in Texas.
-            </p>
-            <div className="mt-8 flex flex-wrap items-center gap-4">
-              <Link href="/book" className="btn btn-brass">Book the band</Link>
-              <Link href="/shows" className="brass-link text-sm text-ink hover:text-ink">
-                Next shows →
-              </Link>
-            </div>
-          </div>
-        </section>
+        {/* ── Act I: the stage — photo + the Stage Light ident ── */}
+        <Hero photo={hero ? { url: hero.blob_url, alt: hero.alt || `${SITE.name} on stage` } : null} />
 
         {/* ── Shows — the setlist strip ── */}
         <section className="mx-auto max-w-6xl px-5 py-20">
