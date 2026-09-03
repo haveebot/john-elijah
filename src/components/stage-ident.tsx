@@ -335,6 +335,7 @@ export function StageIdent({ onReady }: { onReady?: (ready: boolean) => void }) 
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
       gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
       gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, lightTex, 0);
+      const dbg = (window as unknown as { __jeIdent: Record<string, unknown> }).__jeIdent;
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
       const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
@@ -351,6 +352,9 @@ export function StageIdent({ onReady }: { onReady?: (ready: boolean) => void }) 
         lh = Math.max(1, Math.round(canvas.height * LIGHT_SCALE));
         gl.bindTexture(gl.TEXTURE_2D, lightTex);
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, lw, lh, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+        dbg.fbo = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE ? "complete" : "incomplete";
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
       };
       resize();
       window.addEventListener("resize", resize);
@@ -440,6 +444,10 @@ export function StageIdent({ onReady }: { onReady?: (ready: boolean) => void }) 
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
         gl.disableVertexAttribArray(aPos);
 
+        dbg.t = t;
+        dbg.exposure = exposure;
+        dbg.frames = ((dbg.frames as number) || 0) + 1;
+        dbg.glError = gl.getError();
         raf = requestAnimationFrame(frame);
       };
       raf = requestAnimationFrame(frame);
