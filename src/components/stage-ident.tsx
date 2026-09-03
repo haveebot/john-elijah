@@ -377,7 +377,8 @@ export function StageIdent({ onReady }: { onReady?: (ready: boolean) => void }) 
 
       setReady(true);
       onReady?.(true);
-      startedAt = performance.now();
+      // the clock starts a beat early so the first painted frame is already in motion
+      startedAt = performance.now() - 350;
 
       const frame = () => {
         if (disposed) return;

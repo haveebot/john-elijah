@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { StageIdent } from "./stage-ident";
@@ -15,7 +15,17 @@ import { SITE } from "@/lib/site";
  */
 export function Hero({ photo }: { photo: { url: string; alt: string } | null }) {
   const [identOn, setIdentOn] = useState(false);
-  const onReady = useCallback((r: boolean) => setIdentOn(r), []);
+  // the screen stays dark until the specks are already moving, then lights up
+  // (fallback timer so reduced-motion / no-WebGL visitors never wait)
+  const [lit, setLit] = useState(false);
+  const onReady = useCallback((r: boolean) => {
+    setIdentOn(r);
+    if (r) setLit(true);
+  }, []);
+  useEffect(() => {
+    const t = window.setTimeout(() => setLit(true), 1500);
+    return () => window.clearTimeout(t);
+  }, []);
 
   return (
     <section className="relative flex min-h-[94vh] flex-col justify-end overflow-hidden">
@@ -26,6 +36,8 @@ export function Hero({ photo }: { photo: { url: string; alt: string } | null }) 
       )}
       <div className="stage-veil absolute inset-0" aria-hidden />
       <div className="absolute inset-0 bg-canvas/40" aria-hidden />
+      {/* the house lights: dark until the specks run, then a 700ms lift */}
+      <div className={`pointer-events-none absolute inset-0 z-20 bg-canvas transition-opacity duration-700 ease-out ${lit ? "opacity-0" : "opacity-100"}`} aria-hidden />
 
       {/* the ident lives in the upper ~70% of the frame */}
       <div className="absolute inset-x-0 top-0 h-[72%]">
