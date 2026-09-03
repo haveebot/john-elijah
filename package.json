@@ -1,0 +1,36 @@
+{
+  "name": "john-elijah",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "migrate": "node --import tsx scripts/migrate.ts",
+    "seed": "node --import tsx scripts/seed.ts",
+    "import-photos": "node --import tsx scripts/import-photos.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.65.0",
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "@vercel/blob": "^0.27.1",
+    "bcryptjs": "^2.4.3",
+    "next": "^16.2.1",
+    "pg": "^8.13.1",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "resend": "^6.12.3",
+    "stripe": "^22.0.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.2.2",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^25.5.0",
+    "@types/pg": "^8.11.10",
+    "@types/react": "^19.2.14",
+    "postcss": "^8.5.8",
+    "tailwindcss": "^4.2.2",
+    "tsx": "^4.19.2",
+    "typescript": "^6.0.2"
+  }
+}
