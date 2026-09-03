@@ -39,7 +39,7 @@ export default async function BookingsBoard() {
             <option value="festival">Festival</option>
             <option value="other">Other</option>
           </select>
-          <input name="source" placeholder="Source (phone, text, PSC…)" className="field" />
+          <input name="source" placeholder="Source (phone, text, DM…)" className="field" />
           <textarea name="details" placeholder="Details" rows={2} className="field sm:col-span-3" />
           <button type="submit" className="btn btn-brass btn-sm sm:col-span-3 sm:justify-self-start">Add to pipeline</button>
         </form>

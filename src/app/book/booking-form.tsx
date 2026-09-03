@@ -134,7 +134,7 @@ export function BookingForm({
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <div>
           <label className="label mb-2 block" htmlFor="venue_name">Venue / location</label>
-          <input id="venue_name" name="venue_name" placeholder="The Palm Social Club" className={inputCls} />
+          <input id="venue_name" name="venue_name" placeholder="Venue name" className={inputCls} />
         </div>
         <div>
           <label className="label mb-2 block" htmlFor="city">City</label>

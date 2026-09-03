@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { SiteNav, SiteFooter, SectionHeading } from "@/components/site-chrome";
+import { SiteNav, SiteFooter, SectionHeading, LoneStarBadge } from "@/components/site-chrome";
 import { listBandMembers, listPress } from "@/lib/db/music";
 import { listAssetsByTag } from "@/lib/db/gallery";
 import { SITE } from "@/lib/site";
@@ -39,6 +39,7 @@ export default async function BandPage() {
               <p className="script text-4xl text-brass">{lead.name.split(" ")[0]}</p>
               <p className="wordmark mt-1 text-3xl">{lead.name}</p>
               <p className="label mt-2">{lead.instrument} · {lead.hometown}</p>
+              <LoneStarBadge className="mt-4" />
             </div>
             <div className="space-y-4 leading-relaxed text-ink-dim">
               {lead.bio.split("\n\n").map((para, i) => (
@@ -47,6 +48,17 @@ export default async function BandPage() {
             </div>
           </section>
         ) : null}
+
+        <section className="mt-14 rounded-lg border border-brass/30 bg-canvas-raised p-6 md:flex md:items-center md:justify-between md:gap-8">
+          <div>
+            <p className="script text-3xl text-brass">{SITE.affiliation}</p>
+            <p className="mt-2 max-w-xl text-sm leading-relaxed text-ink-dim">
+              John Elijah is part of Lone Star Beer&apos;s artist roster — the National Beer of Texas backing
+              Texas music. Venues, festivals, and brands looking for a Lone Star night: that&apos;s this band.
+            </p>
+          </div>
+          <Link href="/book" className="btn btn-brass mt-5 whitespace-nowrap md:mt-0">Book a Lone Star night</Link>
+        </section>
 
         {rest.length > 0 ? (
           <section className="mt-16">

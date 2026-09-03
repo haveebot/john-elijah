@@ -1,6 +1,6 @@
 /**
  * Seed content — everything verified from public sources on 2026-09-03
- * (South Jetty, Port A Chamber listing, Kickstarter, Spotify, PSC site)
+ * (South Jetty, Port A Chamber listing, Kickstarter, Spotify)
  * plus Winston's decisions. Operator edits in HQ survive re-seeds where
  * the upsert says so (rates are NOT overwritten once set).
  */
@@ -13,17 +13,11 @@ export const CONFIGURATIONS = [
   { key: "full_band", label: "Full band", lineup: "Two guitars, organ, bass, drums — the record lineup", base_cents: 160000, notes: "festivals, big rooms, weddings", sort: 5 },
 ];
 
-export const RESIDENCIES = [
-  {
-    venue_name: "The Palm Social Club",
-    city: "Port Aransas, TX",
-    venue_url: "https://thepalmsocialclub.com/",
-    weekdays: ["fri", "sat"],
-    start_time: "7:00 PM",
-    label: "House band",
-    sort: 1,
-  },
-];
+// No standing residencies right now (The Palm Social Club closed — no house-band claims).
+export const RESIDENCIES: {
+  venue_name: string; city?: string; venue_url?: string | null; weekdays: string[];
+  start_time?: string; label?: string; sort?: number;
+}[] = [];
 
 export const RELEASES = [
   {
@@ -34,7 +28,7 @@ export const RELEASES = [
     cover_url: "https://i.scdn.co/image/ab67616d0000b273d264ec4f514cc3730afb4610",
     spotify_id: "1OJL1qd5AnyqRInvB4DdNM",
     story:
-      "Nine originals, tracked live in a room the old way — no stacking, no fixing it later. Recorded at Sound Machine Studio outside Beeville with the full band, funded by thirty-five people on the island who wanted to hear it as much as we wanted to make it. Released with a night at The Palm Social Club.",
+      "Nine originals, tracked live in a room the old way — no stacking, no fixing it later. Recorded at Sound Machine Studio outside Beeville with the full band, funded by thirty-five people on the island who wanted to hear it as much as we wanted to make it.",
     sort: 1,
     tracks: [
       { number: 1, title: "Heart Goes Boom", duration_ms: 222450 },

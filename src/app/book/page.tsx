@@ -1,4 +1,4 @@
-import { SiteNav, SiteFooter, SectionHeading } from "@/components/site-chrome";
+import { SiteNav, SiteFooter, SectionHeading, LoneStarBadge } from "@/components/site-chrome";
 import { listConfigurations } from "@/lib/db/bookings";
 import { SITE } from "@/lib/site";
 import { BookingForm } from "./booking-form";
@@ -25,6 +25,7 @@ export default async function BookPage({
             a quote and a hold on the date. Solo acoustic through the full five-piece; bars,
             private parties, weddings, festivals, corporate nights. Anywhere in Texas.
           </p>
+          <LoneStarBadge />
         </div>
         <BookingForm
           configurations={configs.map((c) => ({ key: c.key, label: c.label, lineup: c.lineup }))}

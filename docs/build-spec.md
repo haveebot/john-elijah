@@ -23,7 +23,7 @@ Two surfaces, one database:
   known to exist: tee, hat, CD (Kickstarter rewards) — seeded as drafts.
 - **Mail:** create a mailbox on the domain (admin@ / booking@ / contact@ — address TBD).
   Resend sends from it; `BOOKING_NOTIFY_EMAIL` receives inquiry alerts.
-- **Photos:** photographer's Drive share → `Winston/John Elijah` + PSC sets; anything usable.
+- **Photos:** photographer's Drive share → `Winston/John Elijah` + the 5/25/25 set; anything usable. (7/6 + 7/27 sets are other bands.)
 - **Access:** we hold Bluehost; John holds IG / Spotify for Artists / distributor / FB.
 - **Logo:** Collie made the original — Winston asking her. Wordmark (Oswald caps) is the
   placeholder; album cover is a usable image, not the mark.
@@ -36,11 +36,11 @@ bookings         contact, event_kind, event_date, start_time, hours, venue, city
                  guests, budget_cents, quote_cents, deposit_cents, status, details, notes, source
 booking_events   activity trail (note | status_change | email | quote)
 shows            dated public calendar; booking_id links back; is_public; status
-residencies      standing weekly gigs (PSC Fri + Sat, house band)
+residencies      standing weekly gigs (none today — PSC closed; add from HQ)
 releases/tracks  Take and Give (9 tracks, Spotify ids)
 band_members     John + Graves, Soto, Redus, Felix
 press            South Jetty · Chamber listing · Kickstarter
-assets           photo library: web + thumb blob urls, tags (hero|band|stage|crowd|psc), credit
+assets           photo library: web + thumb blob urls, tags (hero|band|stage|crowd), credit
 products/variants/orders/order_items   Stripe archetype (+ weight_oz for parcels)
 shipments        Shippo shipment/rate/transaction, label_url, tracking
 subscribers      the list

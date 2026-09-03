@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS assets (
   width       INT,
   height      INT,
   credit      TEXT NOT NULL DEFAULT '',
-  tags        TEXT[] NOT NULL DEFAULT '{}',   -- 'stage','crowd','psc','portrait','band','hero'
+  tags        TEXT[] NOT NULL DEFAULT '{}',   -- 'stage','crowd','portrait','band','hero'
   featured    BOOLEAN NOT NULL DEFAULT false,
   is_public   BOOLEAN NOT NULL DEFAULT true,
   sort_weight INT NOT NULL DEFAULT 100,
@@ -121,7 +121,7 @@ CREATE TABLE IF NOT EXISTS shows (
 );
 CREATE INDEX IF NOT EXISTS shows_date_idx ON shows (date, is_public);
 
--- standing weekly gigs (the PSC Friday/Saturday residency)
+-- standing weekly gigs (none seeded — add from HQ when a real one exists)
 CREATE TABLE IF NOT EXISTS residencies (
   id         SERIAL PRIMARY KEY,
   venue_name TEXT NOT NULL,
@@ -129,7 +129,7 @@ CREATE TABLE IF NOT EXISTS residencies (
   venue_url  TEXT,
   weekdays   TEXT[] NOT NULL DEFAULT '{}',    -- 'fri','sat'
   start_time TEXT NOT NULL DEFAULT '',
-  label      TEXT NOT NULL DEFAULT '',        -- 'House band'
+  label      TEXT NOT NULL DEFAULT '',        -- e.g. 'Weekly'
   active     BOOLEAN NOT NULL DEFAULT true,
   sort       INT NOT NULL DEFAULT 100,
   UNIQUE (venue_name)

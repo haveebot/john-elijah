@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { SiteNav, SiteFooter, Wordmark } from "@/components/site-chrome";
+import { SiteNav, SiteFooter, Wordmark, LoneStarBadge } from "@/components/site-chrome";
 import { ShowRow, ResidencyRow } from "@/components/show-row";
 import { SubscribeForm } from "@/components/subscribe-form";
 import { SITE } from "@/lib/site";
@@ -49,6 +49,7 @@ export default async function HomePage() {
             <h1 className="mt-2">
               <Wordmark size="xl" />
             </h1>
+            <LoneStarBadge size="lg" className="mt-5" />
             <p className="mt-4 max-w-xl text-lg leading-relaxed text-ink-dim">
               Originals rooted in blues and soul, out of {SITE.origin}. Full band to solo
               acoustic — anywhere in Texas.

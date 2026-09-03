@@ -148,3 +148,28 @@ html {
 .btn-ghost { border: 1px solid var(--color-canvas-edge); color: var(--color-ink-dim); }
 .btn-ghost:hover { border-color: var(--color-ink-faint); color: var(--color-ink); }
 .btn-sm { padding: 0.35rem 0.9rem; font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; }
+
+/* Lone Star Beer official-artist badge — brand red + star, restrained */
+.lonestar-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  border: 1px solid rgba(217, 164, 65, 0.45);
+  border-radius: 9999px;
+  padding: 0.35rem 0.9rem 0.35rem 0.6rem;
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--color-ink);
+  background: linear-gradient(90deg, rgba(190, 30, 45, 0.28), rgba(190, 30, 45, 0.06));
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+.lonestar-badge:hover { border-color: var(--color-brass); }
+.lonestar-badge-lg { font-size: 0.85rem; padding: 0.5rem 1.2rem 0.5rem 0.8rem; }
+.lonestar-mark {
+  height: 1.9em;
+  width: auto;
+  display: block;
+}
+.lonestar-badge-lg .lonestar-mark { height: 2.4em; }

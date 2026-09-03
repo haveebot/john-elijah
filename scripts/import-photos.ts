@@ -6,7 +6,7 @@
  * ≤800px thumb, both uploaded; the site only ever serves those.
  *
  * Usage:
- *   node --env-file=.env.local --import tsx scripts/import-photos.ts <dir> [--tags stage,psc] [--credit "Name"] [--taken 2025-05-25] [--featured N]
+ *   node --env-file=.env.local --import tsx scripts/import-photos.ts <dir> [--tags stage,crowd] [--credit "Name"] [--taken 2025-05-25] [--featured N]
  *
  * Idempotent: upserts on source_url = "<dirname>/<filename>". Re-running
  * refreshes blob copies; operator-edited alt/credit/tags survive.

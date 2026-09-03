@@ -56,6 +56,7 @@ export function SiteFooter() {
         <div>
           <Wordmark size="lg" />
           <p className="label mt-3">{SITE.origin} · {SITE.bookingRadius}</p>
+          <LoneStarBadge className="mt-4" />
         </div>
         <div className="flex flex-col items-start gap-2 text-sm text-ink-dim md:items-end">
           <a href={SITE.instagram} target="_blank" rel="noopener noreferrer" className="brass-link hover:text-ink">
@@ -71,6 +72,23 @@ export function SiteFooter() {
         </div>
       </div>
     </footer>
+  );
+}
+
+export function LoneStarBadge({ className = "", size = "sm" }: { className?: string; size?: "sm" | "lg" }) {
+  return (
+    <a
+      href={SITE.affiliationUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={`lonestar-badge ${size === "lg" ? "lonestar-badge-lg" : ""} ${className}`}
+      aria-label={SITE.affiliation}
+    >
+      {/* Lone Star's own public mark (lonestarbeer.com) — Winston: promote openly */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/brand/lone-star-white.svg" alt="" className="lonestar-mark" aria-hidden />
+      <span>{SITE.affiliation}</span>
+    </a>
   );
 }
 

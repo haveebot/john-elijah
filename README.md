@@ -28,7 +28,7 @@ npm install
 cp .env.example .env.local   # fill in
 npm run migrate              # applies src/lib/db/schema.sql (idempotent)
 npm run seed                 # loads scripts/seed-data/content.ts (idempotent upserts)
-npm run import-photos -- <dir> --tags stage,psc --credit "Photographer" --taken 2025-05-25 --featured 4
+npm run import-photos -- <dir> --tags stage --credit "Photographer" --taken 2025-05-25 --featured 4
 npm run dev
 ```
 

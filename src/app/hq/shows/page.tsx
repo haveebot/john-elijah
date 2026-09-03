@@ -55,7 +55,7 @@ export default async function HqShows() {
           <input name="city" placeholder="City" className="field" />
           <input name="weekdays" required placeholder="fri,sat" className="field" />
           <input name="start_time" placeholder="7:00 PM" className="field" />
-          <input name="label" placeholder="House band" className="field" />
+          <input name="label" placeholder="Label (e.g. Weekly)" className="field" />
           <input name="venue_url" placeholder="Venue URL" className="field md:col-span-3" />
           <button type="submit" className="btn btn-ghost btn-sm justify-self-start">Add residency</button>
         </form>
