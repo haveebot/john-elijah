@@ -42,9 +42,16 @@ export default async function BandPage() {
               <LoneStarBadge className="mt-4" />
             </div>
             <div className="space-y-4 leading-relaxed text-ink-dim">
+              <p className="text-ink">
+                Hard to put a genre on it. Blues, rock, soul, jazz, R&amp;B and Americana all pass through, and it always comes out sounding like him — smooth, greasy, beautiful. A rough-but-soothing voice, a guitar that raises hair, and the coastal ease of Port Aransas carried into every room. Never the same song twice.
+              </p>
               {lead.bio.split("\n\n").map((para, i) => (
                 <p key={i}>{para}</p>
               ))}
+              <blockquote className="border-l-2 border-brass/60 pl-4 text-sm italic">
+                “No joke, this is easily one of the best bands I&apos;ve ever gotten to play with. Deep, deep grooves and tons of original music — all with an improvisational depth that&apos;s really exciting. We never know where a song might end up going.”
+                <span className="label mt-1 block not-italic">— Kris Redus, producer / studio drummer</span>
+              </blockquote>
             </div>
           </section>
         ) : null}

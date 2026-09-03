@@ -52,9 +52,31 @@ export type Booking = {
   details: string;
   notes: string;
   source: string;
+  travel_band: string | null;
+  estimate_cents: number | null;
+  deposit_paid_at: string | null;
+  deposit_session_id: string | null;
   created_at: string;
   updated_at: string;
 };
+
+export type TravelBand = { key: string; label: string; fee_cents: number; sort: number };
+
+export async function listTravelBands(): Promise<TravelBand[]> {
+  return query<TravelBand>(`SELECT * FROM travel_bands ORDER BY sort, key`);
+}
+
+export async function upsertTravelBand(b: TravelBand): Promise<void> {
+  await query(
+    `INSERT INTO travel_bands (key, label, fee_cents, sort) VALUES ($1,$2,$3,$4)
+     ON CONFLICT (key) DO UPDATE SET label=EXCLUDED.label, sort=EXCLUDED.sort`,
+    [b.key, b.label, b.fee_cents, b.sort],
+  );
+}
+
+export async function setTravelBandFee(key: string, feeCents: number): Promise<void> {
+  await query(`UPDATE travel_bands SET fee_cents = $2 WHERE key = $1`, [key, feeCents]);
+}
 
 export type BookingEvent = {
   id: number;
@@ -133,13 +155,15 @@ export async function createBooking(input: {
   budget_cents?: number | null;
   details?: string;
   source?: string;
+  travel_band?: string | null;
+  estimate_cents?: number | null;
 }): Promise<Booking> {
   const rows = await query<Booking>(
     `INSERT INTO bookings
        (contact_name, contact_email, contact_phone, event_kind, event_date, start_time, hours,
-        venue_name, city, configuration, guests, budget_cents, details, source)
+        venue_name, city, configuration, guests, budget_cents, details, source, travel_band, estimate_cents)
      VALUES ($1,$2,COALESCE($3,''),COALESCE($4,'venue'),$5,COALESCE($6,''),$7,
-             COALESCE($8,''),COALESCE($9,''),$10,$11,$12,COALESCE($13,''),COALESCE($14,'site'))
+             COALESCE($8,''),COALESCE($9,''),$10,$11,$12,COALESCE($13,''),COALESCE($14,'site'),$15,$16)
      RETURNING *`,
     [
       input.contact_name,
@@ -156,9 +180,11 @@ export async function createBooking(input: {
       input.budget_cents ?? null,
       input.details,
       input.source,
+      input.travel_band ?? null,
+      input.estimate_cents ?? null,
     ],
   );
-  await addBookingEvent(rows[0].id, "note", `Inquiry received via ${input.source ?? "site"}.`);
+  await addBookingEvent(rows[0].id, "note", `Inquiry received via ${input.source ?? "site"}.${input.estimate_cents ? ` Site estimate shown: $${Math.round(input.estimate_cents / 100)}.` : ""}`);
   return rows[0];
 }
 
@@ -178,6 +204,7 @@ export async function updateBooking(
       | "venue_name"
       | "city"
       | "configuration"
+      | "travel_band"
     >
   >,
 ): Promise<Booking | null> {
@@ -187,7 +214,7 @@ export async function updateBooking(
   const rows = await query<Booking>(
     `UPDATE bookings SET
        status=$2, quote_cents=$3, deposit_cents=$4, notes=$5, event_kind=$6, event_date=$7,
-       start_time=$8, hours=$9, venue_name=$10, city=$11, configuration=$12, updated_at=now()
+       start_time=$8, hours=$9, venue_name=$10, city=$11, configuration=$12, travel_band=$13, updated_at=now()
      WHERE id=$1 RETURNING *`,
     [
       id,
@@ -202,6 +229,7 @@ export async function updateBooking(
       next.venue_name,
       next.city,
       next.configuration,
+      next.travel_band,
     ],
   );
   if (patch.status && patch.status !== existing.status) {

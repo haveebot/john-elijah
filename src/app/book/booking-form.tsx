@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { estimateCents, estimateRange, dollars, STANDARD_HOURS } from "@/lib/quote";
 
 const EVENT_KINDS = [
   { value: "venue", label: "Bar / club / restaurant" },
@@ -19,18 +20,32 @@ const BUDGETS = [
   { value: "2500", label: "$2,500 or more" },
 ];
 
-type Config = { key: string; label: string; lineup: string };
+type Config = { key: string; label: string; lineup: string; base_cents: number };
+type Band = { key: string; label: string; fee_cents: number };
 
 export function BookingForm({
   configurations,
+  travelBands,
   defaultConfiguration,
 }: {
   configurations: Config[];
+  travelBands: Band[];
   defaultConfiguration: string;
 }) {
   const [state, setState] = useState<"idle" | "busy" | "done" | "error">("idle");
   const [configuration, setConfiguration] = useState(defaultConfiguration);
+  const [travelBand, setTravelBand] = useState(travelBands[0]?.key ?? "");
+  const [hours, setHours] = useState<string>("");
   const [company_site, setCompanySite] = useState(""); // honeypot
+
+  const estimate = useMemo(() => {
+    const cfg = configurations.find((c) => c.key === configuration);
+    const band = travelBands.find((b) => b.key === travelBand);
+    if (!cfg) return null;
+    const h = Number(hours);
+    const cents = estimateCents({ baseCents: cfg.base_cents, hours: Number.isFinite(h) && h > 0 ? h : null, travelFeeCents: band?.fee_cents ?? 0 });
+    return { cents, ...estimateRange(cents) };
+  }, [configurations, travelBands, configuration, travelBand, hours]);
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -51,6 +66,8 @@ export function BookingForm({
           venue_name: form.get("venue_name") || "",
           city: form.get("city") || "",
           configuration,
+          travel_band: travelBand,
+          estimate_cents: estimate?.cents ?? null,
           guests: form.get("guests") || null,
           budget: form.get("budget") || null,
           details: form.get("details") || "",
@@ -123,7 +140,7 @@ export function BookingForm({
         </div>
         <div>
           <label className="label mb-2 block" htmlFor="hours">Hours of music</label>
-          <input id="hours" name="hours" type="number" min="1" max="6" step="0.5" placeholder="3" className={inputCls} />
+          <input id="hours" name="hours" type="number" min="1" max="6" step="0.5" placeholder={String(STANDARD_HOURS)} value={hours} onChange={(e) => setHours(e.target.value)} className={inputCls} />
         </div>
         <div>
           <label className="label mb-2 block" htmlFor="guests">Crowd size (rough)</label>
@@ -141,6 +158,25 @@ export function BookingForm({
           <input id="city" name="city" placeholder="Port Aransas, TX" className={inputCls} />
         </div>
       </div>
+
+      <div>
+        <label className="label mb-2 block" htmlFor="travel_band">How far from Port Aransas</label>
+        <select id="travel_band" name="travel_band" value={travelBand} onChange={(e) => setTravelBand(e.target.value)} className={inputCls}>
+          {travelBands.map((b) => (
+            <option key={b.key} value={b.key}>{b.label}</option>
+          ))}
+        </select>
+      </div>
+
+      {estimate ? (
+        <div className="rounded-lg border border-brass/40 bg-canvas-raised p-5">
+          <p className="label">Working number</p>
+          <p className="wordmark mt-1 text-4xl">{dollars(estimate.low)} – {dollars(estimate.high)}</p>
+          <p className="mt-1 text-xs text-ink-faint">
+            {selected?.label} · {Number(hours) > 0 ? `${hours} hours` : `a standard ${STANDARD_HOURS}-hour night`} · {travelBands.find((b) => b.key === travelBand)?.label}. Firm quote comes back with the hold.
+          </p>
+        </div>
+      ) : null}
 
       <div>
         <label className="label mb-2 block" htmlFor="budget">Budget</label>

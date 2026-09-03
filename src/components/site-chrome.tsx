@@ -68,6 +68,9 @@ export function SiteFooter() {
           <Link href="/book" className="brass-link hover:text-ink">
             Booking
           </Link>
+          <Link href="/epk" className="brass-link hover:text-ink">
+            Press kit (EPK)
+          </Link>
           <a href={SITE.photographer.url} target="_blank" rel="noopener noreferrer" className="brass-link hover:text-ink">
             Photography — {SITE.photographer.name}
           </a>

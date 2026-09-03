@@ -14,6 +14,10 @@ export default async function HqShows() {
     <div>
       <p className="label">Shows</p>
       <h1 className="wordmark mt-2 text-4xl">The calendar</h1>
+      <p className="mt-2 flex flex-wrap gap-3 text-xs text-ink-dim">
+        <a href="/api/hq/shows-export" className="brass-link text-ink">Export upcoming as CSV (Bandsintown / Songkick bulk upload)</a>
+        <a href="/shows.ics" className="brass-link text-ink">Public calendar feed (.ics)</a>
+      </p>
 
       <form action={actionUpsertShow} className="mt-6 grid grid-cols-2 gap-3 rounded-lg border border-canvas-edge/60 bg-canvas-raised p-5 md:grid-cols-4">
         <p className="label col-span-full">Add a dated show</p>

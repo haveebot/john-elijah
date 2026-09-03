@@ -50,7 +50,7 @@ export const BAND = [
     instrument: "Guitar, vocals",
     hometown: "Port Aransas, TX",
     sort: 1,
-    bio: `Port Aransas raised — the family moved to the island to open Lisabella's, and there was always an instrument within reach. Four years as a working guitarist around Dallas–Fort Worth, a year on the road, then back to the coast, where the small-town pace and the island crowd shaped how the songs get written and how the shows get played.
+    bio: `Port Aransas raised — the family moved to the island to open Lisabella's, and there was always an instrument within reach. University of North Texas in Denton, then four years as a working guitarist around Dallas–Fort Worth and a year on the road, then back to the coast, where the small-town pace and the island crowd shaped how the songs get written and how the shows get played.
 
 Blues and soul at the root of everything — even when a song wanders into reggae or funk, that's where it comes home. Loud and fast, quiet and slow, mostly originals these days. The full band cut Take and Give live in a room in 2025; the solo acoustic set is the same songs with the volume down and the stories up.`,
   },
@@ -95,4 +95,36 @@ export const PRODUCTS = [
   { kind: "music", title: "Take and Give — CD", slug: "take-and-give-cd", description: "The record on a disc. Nine originals, tracked live.", price_cents: 1500, weight_oz: 4, status: "draft", variants: [{ label: "One size", sort: 1 }] },
   { kind: "apparel", title: "John Elijah Band tee", slug: "band-tee", description: "The first-ever John Elijah shirt.", price_cents: 3000, weight_oz: 7, status: "draft", variants: ["S", "M", "L", "XL", "2XL"].map((l, i) => ({ label: l, sort: i + 1 })) },
   { kind: "accessory", title: "John Elijah Band hat", slug: "band-hat", description: "For the sun and the stage.", price_cents: 3000, weight_oz: 5, status: "draft", variants: [{ label: "One size", sort: 1 }] },
+];
+
+// Travel bands — flat fees by distance from Port Aransas. PLACEHOLDERS pending Winston + John.
+export const TRAVEL_BANDS = [
+  { key: "local", label: "Port Aransas / Corpus Christi (under 30 mi)", fee_cents: 0, sort: 1 },
+  { key: "coastal_bend", label: "Coastal Bend (30–100 mi)", fee_cents: 15000, sort: 2 },
+  { key: "texas", label: "Texas (100–250 mi)", fee_cents: 40000, sort: 3 },
+  { key: "far_texas", label: "Far Texas (250+ mi)", fee_cents: 75000, sort: 4 },
+];
+
+// YouTube — John's channel @JohnElijahMusic (UCL9DDwErICGT3UJoRQvAexA) + two third-party pieces.
+export const VIDEOS = [
+  { youtube_id: "F_2CH_WoaZo", title: "She Got the House (Cases of Lone Star Beer)", kind: "live", duration: "6:21", featured: true, sort: 1 },
+  { youtube_id: "kEeo47p_-MI", title: "Roof Over My Head — live at Sound Machine Studio", kind: "studio", duration: "4:39", featured: true, sort: 2 },
+  { youtube_id: "t973iERyi-Q", title: "Meet Me in the City", kind: "live", duration: "5:02", featured: true, sort: 3 },
+  { youtube_id: "vS2pN5CY-Cc", title: "I'm a Man — live", kind: "live", duration: "4:11", sort: 4 },
+  { youtube_id: "S-b8hIb70h4", title: "Mortgage on My Soul", kind: "live", duration: "6:21", sort: 5 },
+  { youtube_id: "K8HpzhiDY3U", title: "Party Down", kind: "live", duration: "3:27", sort: 6 },
+  { youtube_id: "RJaDF_jq2T0", title: "Me and My Woman", kind: "live", duration: "3:35", sort: 7 },
+  { youtube_id: "6iuNRt1IVFI", title: "Roof Over My Head — live", kind: "live", duration: "4:32", sort: 8 },
+  { youtube_id: "lMWT5Cqv7lA", title: "Tom Cat — live", kind: "live", duration: "2:15", sort: 9 },
+  { youtube_id: "UUxbomOuMsc", title: "Do You Feel It (NRBQ)", kind: "cover", duration: "3:50", sort: 10 },
+  { youtube_id: "ToytKhE4Pz8", title: "John Elijah Band — montage 2", kind: "montage", duration: "4:57", sort: 11 },
+  { youtube_id: "W1IdvYLYDf0", title: "John Elijah Band — montage 1", kind: "montage", duration: "2:25", sort: 12 },
+  { youtube_id: "uDHHqlJX8nQ", title: "Visit Port Aransas — musician feature", kind: "other", duration: "0:30", sort: 13 },
+  { youtube_id: "Ib_2ZqCjByk", title: "Know That About You (Rdrokit Power)", kind: "live", duration: "6:03", sort: 14 },
+  { youtube_id: "IZYGcfhkysg", title: "Love and Sound", kind: "live", duration: "", sort: 15 },
+];
+
+// Past dated shows worth keeping on the record (from the old Bandzoogle site).
+export const SHOWS = [
+  { date: "2026-05-01", venue_name: "Buc Days Festival", city: "Corpus Christi, TX", start_time: "8:00 PM", kind: "festival", status: "confirmed", is_public: true, notes: "Closed the opening night of Buc Days." },
 ];

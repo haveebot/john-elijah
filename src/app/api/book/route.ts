@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { createBooking, addBookingEvent, listConfigurations } from "@/lib/db/bookings";
+import { createBooking, addBookingEvent, listConfigurations, listTravelBands } from "@/lib/db/bookings";
+import { estimateCents } from "@/lib/quote";
 import { sendMail, notifyEmail } from "@/lib/mail";
 import { SITE } from "@/lib/site";
 
@@ -44,16 +45,23 @@ export async function POST(request: Request) {
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
   if (rateLimited(ip)) return NextResponse.json({ error: "slow-down" }, { status: 429 });
 
-  const configs = await listConfigurations();
+  const [configs, bands] = await Promise.all([listConfigurations(), listTravelBands()]);
   const configuration = configs.some((c) => c.key === body.configuration)
     ? String(body.configuration)
     : null;
+  const travelBand = bands.some((b) => b.key === body.travel_band) ? String(body.travel_band) : null;
   const eventKind = EVENT_KINDS.has(String(body.event_kind)) ? String(body.event_kind) : "other";
   const dateRaw = String(body.event_date ?? "");
   const eventDate = /^\d{4}-\d{2}-\d{2}$/.test(dateRaw) ? dateRaw : null;
   const hours = Number(body.hours);
   const guests = Number(body.guests);
   const budget = Number(body.budget);
+  // recompute the estimate server-side (never trust the client's number)
+  const cfg = configs.find((c) => c.key === configuration);
+  const band = bands.find((b) => b.key === travelBand);
+  const estimate = cfg
+    ? estimateCents({ baseCents: cfg.base_cents, hours: Number.isFinite(hours) && hours > 0 ? Math.min(hours, 12) : null, travelFeeCents: band?.fee_cents ?? 0 })
+    : null;
 
   const booking = await createBooking({
     contact_name: name.slice(0, 200),
@@ -70,9 +78,11 @@ export async function POST(request: Request) {
     budget_cents: Number.isFinite(budget) && budget > 0 ? Math.round(budget * 100) : null,
     details: String(body.details ?? "").slice(0, 4000),
     source: "site",
+    travel_band: travelBand,
+    estimate_cents: estimate,
   });
 
-  const label = configs.find((c) => c.key === configuration)?.label ?? "TBD";
+  const label = cfg?.label ?? "TBD";
   const when = [eventDate, booking.start_time].filter(Boolean).join(" ") || "date TBD";
   const where = [booking.venue_name, booking.city].filter(Boolean).join(", ") || "location TBD";
 
@@ -80,7 +90,7 @@ export async function POST(request: Request) {
   const confirm = await sendMail({
     to: booking.contact_email,
     subject: `Got your booking inquiry — ${SITE.bandName}`,
-    text: `Hi ${booking.contact_name},\n\nGot it. ${label} · ${when} · ${where}.\n\nYou'll hear back with a quote and a hold on the date, usually within a day.\n\n— ${SITE.bandName}\n${SITE.domain}`,
+    text: `Hi ${booking.contact_name},\n\nGot it. ${label} · ${when} · ${where}.${estimate ? ` The working number you saw was about $${Math.round(estimate / 100)}.` : ""}\n\nYou'll hear back with the firm quote and a hold on the date, usually within a day.\n\n— ${SITE.bandName}\n${SITE.domain}`,
   });
   // alert to the band
   const notify = notifyEmail();
@@ -89,7 +99,7 @@ export async function POST(request: Request) {
         to: notify,
         replyTo: booking.contact_email,
         subject: `New booking inquiry: ${label} · ${when} · ${where}`,
-        text: `${booking.contact_name} <${booking.contact_email}>${booking.contact_phone ? ` · ${booking.contact_phone}` : ""}\n\nKind: ${eventKind}\nWhen: ${when}${booking.hours ? ` · ${booking.hours}h` : ""}\nWhere: ${where}\nLineup: ${label}\nCrowd: ${booking.guests ?? "—"}\nBudget: ${booking.budget_cents ? `$${booking.budget_cents / 100}` : "—"}\n\n${booking.details || "(no details)"}\n\nHQ: ${SITE.domain}/hq/bookings/${booking.id}`,
+        text: `${booking.contact_name} <${booking.contact_email}>${booking.contact_phone ? ` · ${booking.contact_phone}` : ""}\n\nKind: ${eventKind}\nWhen: ${when}${booking.hours ? ` · ${booking.hours}h` : ""}\nWhere: ${where}\nLineup: ${label}\nCrowd: ${booking.guests ?? "—"}\nBudget: ${booking.budget_cents ? `$${booking.budget_cents / 100}` : "—"}\nSite estimate: ${estimate ? `$${Math.round(estimate / 100)}` : "—"}\n\n${booking.details || "(no details)"}\n\nHQ: ${SITE.domain}/hq/bookings/${booking.id}`,
       })
     : { sent: false, error: "no-notify-address" };
 

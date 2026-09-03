@@ -1,10 +1,11 @@
 import { listReleases, listBandMembers, listPress } from "@/lib/db/music";
-import { actionUpdateReleaseStory, actionUpsertBandMember, actionUpsertPress } from "../actions";
+import { listVideos } from "@/lib/db/videos";
+import { actionUpdateReleaseStory, actionUpsertBandMember, actionUpsertPress, actionUpsertVideo, actionToggleVideoFlag, actionDeleteVideo } from "../actions";
 
 export const dynamic = "force-dynamic";
 
 export default async function HqMusic() {
-  const [releases, members, press] = await Promise.all([listReleases(false), listBandMembers(false), listPress(false)]);
+  const [releases, members, press, videos] = await Promise.all([listReleases(false), listBandMembers(false), listPress(false), listVideos(false)]);
 
   return (
     <div className="max-w-4xl">
@@ -21,6 +22,29 @@ export default async function HqMusic() {
             <button type="submit" className="btn btn-ghost btn-sm mt-3">Save story</button>
           </form>
         ))}
+      </section>
+
+      <section className="mt-10">
+        <h2 className="label mb-3">Videos · {videos.length}</h2>
+        <ul className="setlist rounded-lg border border-canvas-edge/60 bg-canvas-raised">
+          {videos.map((v) => (
+            <li key={v.id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-2.5 text-sm">
+              <span><span className="wordmark text-lg">{v.title}</span><span className="ml-3 text-ink-dim">{v.kind}{v.duration ? ` · ${v.duration}` : ""} · {v.youtube_id}</span></span>
+              <span className="flex gap-2">
+                <form action={actionToggleVideoFlag}><input type="hidden" name="id" value={v.id} /><input type="hidden" name="flag" value="featured" /><button className={`btn btn-sm ${v.featured ? "btn-brass" : "btn-ghost"}`}>{v.featured ? "Featured" : "Feature"}</button></form>
+                <form action={actionToggleVideoFlag}><input type="hidden" name="id" value={v.id} /><input type="hidden" name="flag" value="is_public" /><button className={`btn btn-sm ${v.is_public ? "btn-ghost" : "btn-brass"}`}>{v.is_public ? "Hide" : "Show"}</button></form>
+                <form action={actionDeleteVideo}><input type="hidden" name="id" value={v.id} /><button className="text-xs text-coral hover:underline">Delete</button></form>
+              </span>
+            </li>
+          ))}
+        </ul>
+        <form action={actionUpsertVideo} className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-5">
+          <input name="youtube" required placeholder="YouTube URL or id" className="field md:col-span-2" />
+          <input name="title" required placeholder="Title" className="field" />
+          <select name="kind" className="field" defaultValue="live">{["live", "studio", "montage", "cover", "other"].map((k) => <option key={k} value={k}>{k}</option>)}</select>
+          <label className="flex items-center gap-2 text-sm text-ink-dim"><input type="checkbox" name="featured" /> Featured</label>
+          <button type="submit" className="btn btn-ghost btn-sm justify-self-start">Add video</button>
+        </form>
       </section>
 
       <section className="mt-10">

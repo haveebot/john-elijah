@@ -262,3 +262,32 @@ CREATE TABLE IF NOT EXISTS subscribers (
   source     TEXT NOT NULL DEFAULT 'site',
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- ───────────────────────── videos (YouTube) ─────────────────────────
+
+CREATE TABLE IF NOT EXISTS videos (
+  id          SERIAL PRIMARY KEY,
+  youtube_id  TEXT NOT NULL UNIQUE,
+  title       TEXT NOT NULL,
+  kind        TEXT NOT NULL DEFAULT 'live',   -- live|studio|montage|cover|other
+  duration    TEXT NOT NULL DEFAULT '',
+  featured    BOOLEAN NOT NULL DEFAULT false,
+  is_public   BOOLEAN NOT NULL DEFAULT true,
+  sort        INT NOT NULL DEFAULT 100,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- ───────────────────────── quote estimator inputs ─────────────────────────
+
+-- travel bands: distance from Port Aransas → flat fee (placeholders until Winston + John set them)
+CREATE TABLE IF NOT EXISTS travel_bands (
+  key       TEXT PRIMARY KEY,               -- local|coastal_bend|texas|far_texas
+  label     TEXT NOT NULL,
+  fee_cents INT NOT NULL DEFAULT 0,
+  sort      INT NOT NULL DEFAULT 100
+);
+
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS travel_band    TEXT REFERENCES travel_bands(key) ON DELETE SET NULL;
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS estimate_cents INT;
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS deposit_paid_at TIMESTAMPTZ;
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS deposit_session_id TEXT;

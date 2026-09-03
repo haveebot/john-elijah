@@ -14,5 +14,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${SITE.domain}/band`, lastModified: LAST, changeFrequency: "monthly", priority: 0.7 },
     { url: `${SITE.domain}/photos`, lastModified: LAST, changeFrequency: "monthly", priority: 0.6 },
     { url: `${SITE.domain}/shop`, lastModified: LAST, changeFrequency: "monthly", priority: 0.5 },
+    { url: `${SITE.domain}/epk`, lastModified: LAST, changeFrequency: "monthly", priority: 0.7 },
   ];
 }

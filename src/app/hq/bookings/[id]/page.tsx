@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getBooking, listBookingEvents, listConfigurations, BOOKING_STATUSES, STATUS_LABELS } from "@/lib/db/bookings";
+import { getBooking, listBookingEvents, listConfigurations, listTravelBands, BOOKING_STATUSES, STATUS_LABELS } from "@/lib/db/bookings";
+import { estimateCents, dollars } from "@/lib/quote";
+import { depositUrl } from "@/lib/deposit";
+import { stripeEnabled } from "@/lib/stripe";
 import { getShowForBooking } from "@/lib/db/shows";
 import { mailEnabled } from "@/lib/mail";
 import {
@@ -10,6 +13,7 @@ import {
   actionUpdateBookingDetails,
   actionPromoteToShow,
   actionSendQuoteEmail,
+  actionUpdateBookingTravel,
 } from "../../actions";
 
 export const dynamic = "force-dynamic";
@@ -19,16 +23,20 @@ export default async function BookingDetail({ params }: { params: Promise<{ id: 
   const id = Number(idStr);
   if (!Number.isInteger(id)) notFound();
 
-  const [booking, events, configs, show] = await Promise.all([
+  const [booking, events, configs, bands, show] = await Promise.all([
     getBooking(id),
     listBookingEvents(id),
     listConfigurations(),
+    listTravelBands(),
     getShowForBooking(id),
   ]);
   if (!booking) notFound();
 
   const config = configs.find((c) => c.key === booking.configuration);
-  const suggested = config ? config.base_cents : null;
+  const band = bands.find((b) => b.key === booking.travel_band);
+  const suggested = config
+    ? estimateCents({ baseCents: config.base_cents, hours: booking.hours ? Number(booking.hours) : null, travelFeeCents: band?.fee_cents ?? 0 })
+    : null;
 
   return (
     <div className="max-w-4xl">
@@ -84,6 +92,8 @@ export default async function BookingDetail({ params }: { params: Promise<{ id: 
           <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
             <div><dt className="label">Crowd</dt><dd className="mt-1 text-ink-dim">{booking.guests ?? "—"}</dd></div>
             <div><dt className="label">Their budget</dt><dd className="mt-1 text-ink-dim">{booking.budget_cents ? `$${(booking.budget_cents / 100).toFixed(0)}` : "—"}</dd></div>
+            <div><dt className="label">Site estimate shown</dt><dd className="mt-1 text-ink-dim">{booking.estimate_cents ? dollars(booking.estimate_cents) : "—"}</dd></div>
+            <div><dt className="label">Travel</dt><dd className="mt-1 text-ink-dim">{band ? band.label : "—"}</dd></div>
           </dl>
           <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-ink-dim">{booking.details || "No details given."}</p>
           <button type="submit" className="btn btn-ghost btn-sm mt-4">Save the night</button>
@@ -102,9 +112,34 @@ export default async function BookingDetail({ params }: { params: Promise<{ id: 
                 <input name="deposit_dollars" type="number" min="0" step="1" defaultValue={booking.deposit_cents ? booking.deposit_cents / 100 : ""} className="field mt-1" />
               </label>
             </div>
-            {suggested ? <p className="mt-2 text-xs text-ink-faint">Rate card for {config?.label}: ${(suggested / 100).toFixed(0)}</p> : null}
+            {suggested ? <p className="mt-2 text-xs text-ink-faint">Rate card math for {config?.label}{booking.hours ? ` · ${booking.hours}h` : ""}{band ? ` · ${band.label}` : ""}: {dollars(suggested)}</p> : null}
             <button type="submit" className="btn btn-brass btn-sm mt-4">Set quote</button>
           </form>
+
+          <form action={actionUpdateBookingTravel} className="rounded-lg border border-canvas-edge/60 bg-canvas-raised p-6">
+            <input type="hidden" name="id" value={booking.id} />
+            <p className="label mb-2">Travel band</p>
+            <div className="flex gap-2">
+              <select name="travel_band" defaultValue={booking.travel_band ?? ""} className="field">
+                <option value="">—</option>
+                {bands.map((b) => <option key={b.key} value={b.key}>{b.label} (+${(b.fee_cents / 100).toFixed(0)})</option>)}
+              </select>
+              <button type="submit" className="btn btn-ghost btn-sm whitespace-nowrap">Set</button>
+            </div>
+          </form>
+
+          {booking.deposit_cents ? (
+            <div className="rounded-lg border border-canvas-edge/60 bg-canvas-raised p-6">
+              <p className="label mb-2">Deposit link</p>
+              {booking.deposit_paid_at ? (
+                <p className="text-sm text-teal">Paid {new Date(booking.deposit_paid_at).toLocaleString()}.</p>
+              ) : stripeEnabled() ? (
+                <p className="break-all text-xs text-ink-dim">{depositUrl(booking.id)}<span className="label mt-2 block">Included automatically in the quote email.</span></p>
+              ) : (
+                <p className="text-xs text-ink-faint">Stripe isn&apos;t connected — the link switches on with the keys. Signed per booking; safe to send once live.</p>
+              )}
+            </div>
+          ) : null}
 
           <form action={actionSendQuoteEmail} className="rounded-lg border border-canvas-edge/60 bg-canvas-raised p-6">
             <input type="hidden" name="id" value={booking.id} />

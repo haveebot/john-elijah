@@ -1,6 +1,8 @@
 import Image from "next/image";
 import { SiteNav, SiteFooter, SectionHeading } from "@/components/site-chrome";
 import { listReleases } from "@/lib/db/music";
+import { listVideos } from "@/lib/db/videos";
+import { VideoEmbed } from "@/components/video-embed";
 import { SITE } from "@/lib/site";
 
 export const revalidate = 3600;
@@ -13,7 +15,7 @@ function fmt(ms: number | null): string {
 }
 
 export default async function MusicPage() {
-  const releases = await listReleases();
+  const [releases, videos] = await Promise.all([listReleases(), listVideos()]);
 
   return (
     <>
@@ -76,6 +78,19 @@ export default async function MusicPage() {
             </div>
           </article>
         ))}
+
+        {videos.length > 0 ? (
+          <section className="mb-16">
+            <p className="label mb-2">Live</p>
+            <h2 className="wordmark text-3xl md:text-5xl">Watch</h2>
+            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {videos.map((v, i) => (
+                <VideoEmbed key={v.id} youtubeId={v.youtube_id} title={v.title} priority={i < 3} />
+              ))}
+            </div>
+            <a href="https://www.youtube.com/@JohnElijahMusic" target="_blank" rel="noopener noreferrer" className="brass-link mt-4 inline-block text-sm text-ink-dim hover:text-ink">More on YouTube — @JohnElijahMusic →</a>
+          </section>
+        ) : null}
 
         <div className="rounded-lg border border-canvas-edge/60 bg-canvas-raised p-8">
           <p className="label">Everything else</p>

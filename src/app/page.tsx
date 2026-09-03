@@ -9,11 +9,13 @@ import { listReleases } from "@/lib/db/music";
 import { getHeroAsset, listFeaturedAssets } from "@/lib/db/gallery";
 import { listConfigurations } from "@/lib/db/bookings";
 import { listLiveProducts } from "@/lib/db/commerce";
+import { listFeaturedVideos } from "@/lib/db/videos";
+import { VideoEmbed } from "@/components/video-embed";
 
 export const revalidate = 3600; // static, refreshed hourly — no per-request DB
 
 export default async function HomePage() {
-  const [shows, residencies, releases, hero, featured, configs, products] = await Promise.all([
+  const [shows, residencies, releases, hero, featured, configs, products, videos] = await Promise.all([
     listUpcomingShows(6),
     listResidencies(),
     listReleases(),
@@ -21,6 +23,7 @@ export default async function HomePage() {
     listFeaturedAssets(8),
     listConfigurations(true),
     listLiveProducts(),
+    listFeaturedVideos(3),
   ]);
   const release = releases[0];
 
@@ -130,6 +133,24 @@ export default async function HomePage() {
                   </Link>
                 </div>
               </div>
+            </div>
+          </section>
+        ) : null}
+
+        {/* ── Watch ── */}
+        {videos.length > 0 ? (
+          <section className="mx-auto max-w-6xl px-5 py-16">
+            <div className="mb-8 flex items-end justify-between gap-4">
+              <div>
+                <p className="label mb-2">Live</p>
+                <h2 className="wordmark text-3xl md:text-5xl">Watch</h2>
+              </div>
+              <Link href="/music" className="brass-link mb-1 whitespace-nowrap text-sm text-ink-dim hover:text-ink">All videos →</Link>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-3">
+              {videos.map((v) => (
+                <VideoEmbed key={v.id} youtubeId={v.youtube_id} title={v.title} />
+              ))}
             </div>
           </section>
         ) : null}

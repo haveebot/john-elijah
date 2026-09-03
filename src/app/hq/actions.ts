@@ -15,12 +15,17 @@ import {
   getBooking,
   setConfigurationRate,
   listConfigurations,
+  setTravelBandFee,
+  listTravelBands,
   BOOKING_STATUSES,
   type BookingStatus,
 } from "@/lib/db/bookings";
 import { upsertShow, setShowStatus, toggleShowPublic, deleteShow, upsertResidency, toggleResidency } from "@/lib/db/shows";
 import { updateReleaseStory, upsertBandMember, upsertPress } from "@/lib/db/music";
 import { updateAsset } from "@/lib/db/gallery";
+import { upsertVideo, toggleVideoFlag, deleteVideo } from "@/lib/db/videos";
+import { depositUrl } from "@/lib/deposit";
+import { stripeEnabled } from "@/lib/stripe";
 import { query } from "@/lib/db/client";
 import { createAgentToken, deleteAgentToken } from "@/lib/db/agent-tokens";
 import { setOrderStatus, upsertProduct, getOrder, recordShipment, markShipmentPurchased } from "@/lib/db/commerce";
@@ -34,7 +39,7 @@ async function requireOperator(): Promise<string> {
   return email;
 }
 
-const PUBLIC_PATHS = ["/", "/shows", "/music", "/photos", "/band", "/book", "/shop"];
+const PUBLIC_PATHS = ["/", "/shows", "/music", "/photos", "/band", "/book", "/shop", "/epk", "/shows.ics"];
 function revalidatePublic() {
   for (const p of PUBLIC_PATHS) revalidatePath(p);
 }
@@ -160,6 +165,8 @@ export async function actionSendQuoteEmail(formData: FormData) {
     ``,
     `Rate: $${(booking.quote_cents / 100).toFixed(0)}`,
     booking.deposit_cents ? `Deposit to hold the date: $${(booking.deposit_cents / 100).toFixed(0)}` : null,
+    booking.deposit_cents && stripeEnabled() ? `` : null,
+    booking.deposit_cents && stripeEnabled() ? `Hold it now (card, takes a minute): ${depositUrl(booking.id)}` : null,
     ``,
     `Say the word and we'll hold it.`,
     ``,
@@ -176,6 +183,56 @@ export async function actionSendQuoteEmail(formData: FormData) {
   await addBookingEvent(id, "email", result.sent ? `Quote emailed to ${booking.contact_email}.` : `Quote email NOT sent (${result.error}).`);
   if (result.sent && booking.status === "inquiry") await updateBooking(id, { status: "quoted" });
   revalidatePath(`/hq/bookings/${id}`);
+}
+
+export async function actionSetTravelFee(formData: FormData) {
+  await requireOperator();
+  const key = String(formData.get("key") ?? "");
+  const dollars = Number(formData.get("dollars"));
+  if (!key || !Number.isFinite(dollars) || dollars < 0) return;
+  await setTravelBandFee(key, Math.round(dollars * 100));
+  revalidatePath("/hq/settings");
+  revalidatePublic();
+}
+
+export async function actionUpdateBookingTravel(formData: FormData) {
+  await requireOperator();
+  const id = Number(formData.get("id"));
+  const band = String(formData.get("travel_band") ?? "");
+  if (!Number.isInteger(id)) return;
+  const bands = await listTravelBands();
+  await updateBooking(id, { travel_band: bands.some((b) => b.key === band) ? band : null });
+  revalidatePath(`/hq/bookings/${id}`);
+}
+
+export async function actionUpsertVideo(formData: FormData) {
+  await requireOperator();
+  const raw = String(formData.get("youtube") ?? "").trim();
+  const m = /(?:v=|youtu\.be\/|embed\/|shorts\/)([A-Za-z0-9_-]{6,})/.exec(raw) ?? (/^[A-Za-z0-9_-]{6,}$/.test(raw) ? [raw, raw] : null);
+  const title = String(formData.get("title") ?? "").trim();
+  if (!m || !title) return;
+  await upsertVideo({ youtube_id: m[1], title: title.slice(0, 200), kind: String(formData.get("kind") ?? "live").slice(0, 20), featured: formData.get("featured") === "on" });
+  revalidatePath("/hq/music");
+  revalidatePublic();
+}
+
+export async function actionToggleVideoFlag(formData: FormData) {
+  await requireOperator();
+  const id = Number(formData.get("id"));
+  const flag = String(formData.get("flag"));
+  if (!Number.isInteger(id) || !["featured", "is_public"].includes(flag)) return;
+  await toggleVideoFlag(id, flag as "featured" | "is_public");
+  revalidatePath("/hq/music");
+  revalidatePublic();
+}
+
+export async function actionDeleteVideo(formData: FormData) {
+  await requireOperator();
+  const id = Number(formData.get("id"));
+  if (!Number.isInteger(id)) return;
+  await deleteVideo(id);
+  revalidatePath("/hq/music");
+  revalidatePublic();
 }
 
 export async function actionSetRate(formData: FormData) {

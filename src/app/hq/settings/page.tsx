@@ -1,15 +1,17 @@
 import { listAgentTokens } from "@/lib/db/agent-tokens";
-import { listConfigurations } from "@/lib/db/bookings";
+import { listConfigurations, listTravelBands } from "@/lib/db/bookings";
+import { STANDARD_HOURS, EXTRA_HOUR_PCT } from "@/lib/quote";
 import { query } from "@/lib/db/client";
-import { actionDeleteAgentToken, actionSetRate } from "../actions";
+import { actionDeleteAgentToken, actionSetRate, actionSetTravelFee } from "../actions";
 import { TokenCreator } from "./token-creator";
 
 export const dynamic = "force-dynamic";
 
 export default async function HqSettings() {
-  const [tokens, configs, subs] = await Promise.all([
+  const [tokens, configs, bands, subs] = await Promise.all([
     listAgentTokens(),
     listConfigurations(),
+    listTravelBands(),
     query<{ email: string; source: string; created_at: string }>(
       `SELECT email, source, created_at FROM subscribers ORDER BY created_at DESC LIMIT 100`,
     ),
@@ -36,6 +38,26 @@ export default async function HqSettings() {
                 <input type="hidden" name="key" value={c.key} />
                 <span className="label">$</span>
                 <input name="dollars" type="number" min="0" step="25" defaultValue={c.base_cents / 100} className="field w-24 py-1 text-sm" />
+                <button type="submit" className="btn btn-ghost btn-sm">Set</button>
+              </form>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="mt-12">
+        <h2 className="label mb-3">Travel bands</h2>
+        <p className="mb-4 max-w-xl text-sm text-ink-dim">
+          Flat fees by distance from Port Aransas, added to the working number on the booking page. A standard night is {STANDARD_HOURS} hours; each extra hour adds {Math.round(EXTRA_HOUR_PCT * 100)}% of the base. Placeholders until you and John set them.
+        </p>
+        <ul className="setlist rounded-lg border border-canvas-edge/60 bg-canvas-raised">
+          {bands.map((b) => (
+            <li key={b.key} className="flex items-center justify-between gap-4 px-5 py-3">
+              <p className="text-sm">{b.label}</p>
+              <form action={actionSetTravelFee} className="flex items-center gap-2">
+                <input type="hidden" name="key" value={b.key} />
+                <span className="label">+$</span>
+                <input name="dollars" type="number" min="0" step="25" defaultValue={b.fee_cents / 100} className="field w-24 py-1 text-sm" />
                 <button type="submit" className="btn btn-ghost btn-sm">Set</button>
               </form>
             </li>
