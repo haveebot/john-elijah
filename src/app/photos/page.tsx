@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { SiteNav, SiteFooter, SectionHeading } from "@/components/site-chrome";
 import { listPublicAssets } from "@/lib/db/gallery";
+import { SITE } from "@/lib/site";
 
 export const revalidate = 3600;
 export const metadata = { title: "Photos" };
@@ -44,9 +45,19 @@ export default async function PhotosPage() {
             })}
           </div>
         )}
-        {credits.length > 0 ? (
-          <p className="label mx-auto mt-10 max-w-6xl px-5">Photography: {credits.join(" · ")}</p>
-        ) : null}
+        <p className="label mx-auto mt-10 max-w-6xl px-5">
+          Photography:{" "}
+          {credits.length > 0 ? credits.map((c, i) => (
+            <span key={c}>
+              {i > 0 ? " · " : ""}
+              {c === SITE.photographer.name ? (
+                <a href={SITE.photographer.url} target="_blank" rel="noopener noreferrer" className="brass-link text-ink">{c}</a>
+              ) : c}
+            </span>
+          )) : (
+            <a href={SITE.photographer.url} target="_blank" rel="noopener noreferrer" className="brass-link text-ink">{SITE.photographer.name}</a>
+          )}
+        </p>
       </main>
       <SiteFooter />
     </>

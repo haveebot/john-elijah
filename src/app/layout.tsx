@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Oswald, Yellowtail } from "next/font/google";
 import { SITE } from "@/lib/site";
+import { MusicGroupJsonLd } from "@/components/json-ld";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
@@ -14,9 +15,9 @@ export const metadata: Metadata = {
   },
   description: SITE.description,
   metadataBase: new URL(SITE.domain),
-  // PRE-LAUNCH POSTURE: invisible to crawlers until the domain flips.
-  // Flip to index:true at DNS cutover (docs/build-spec.md launch checklist).
-  robots: { index: false, follow: false },
+  // LIVE: DNS flipped 2026-09-03 — indexable.
+  robots: { index: true, follow: true },
+  alternates: { canonical: SITE.domain },
   openGraph: {
     type: "website",
     siteName: SITE.name,
@@ -36,7 +37,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${inter.variable} ${oswald.variable} ${yellowtail.variable}`}>
-      <body className="min-h-screen bg-canvas text-ink">{children}</body>
+      <body className="min-h-screen bg-canvas text-ink">
+        <MusicGroupJsonLd />
+        {children}
+      </body>
     </html>
   );
 }

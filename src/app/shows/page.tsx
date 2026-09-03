@@ -2,6 +2,7 @@ import Link from "next/link";
 import { SiteNav, SiteFooter, SectionHeading } from "@/components/site-chrome";
 import { ShowRow, ResidencyRow } from "@/components/show-row";
 import { listUpcomingShows, listPastShows, listResidencies } from "@/lib/db/shows";
+import { EventsJsonLd } from "@/components/json-ld";
 
 export const revalidate = 3600;
 export const metadata = { title: "Shows" };
@@ -16,6 +17,7 @@ export default async function ShowsPage() {
   return (
     <>
       <SiteNav />
+      <EventsJsonLd shows={upcoming} />
       <main className="mx-auto max-w-4xl px-5 py-16">
         <SectionHeading label="Calendar" title="Shows" />
 

@@ -4,7 +4,7 @@ import { listUpcomingShows } from "@/lib/db/shows";
 import { listOrders } from "@/lib/db/commerce";
 import { assetCount } from "@/lib/db/gallery";
 import { query } from "@/lib/db/client";
-import { mailEnabled } from "@/lib/mail";
+import { mailEnabled, mailTransportName } from "@/lib/mail";
 import { stripeEnabled } from "@/lib/stripe";
 import { shippoEnabled } from "@/lib/shippo";
 
@@ -37,7 +37,7 @@ export default async function HqToday() {
   ];
 
   const integrations = [
-    { name: "Mail", on: mailEnabled(), note: "Resend + johnelijahmusic.com" },
+    { name: "Mail", on: mailEnabled(), note: mailTransportName() === "smtp" ? "Google Workspace SMTP" : mailTransportName() === "resend" ? "Resend" : "SMTP_USER/SMTP_PASS or RESEND_API_KEY" },
     { name: "Stripe", on: stripeEnabled(), note: "merch checkout" },
     { name: "Shippo", on: shippoEnabled(), note: "labels from Orders" },
   ];
