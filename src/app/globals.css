@@ -173,3 +173,24 @@ html {
   display: block;
 }
 .lonestar-badge-lg .lonestar-mark { height: 2.4em; }
+
+/* ── the stamp: hero type lands after the key pass ── */
+.stamp-wait .stamp-title,
+.stamp-wait .stamp-line { opacity: 0; }
+.stamp-in .stamp-title { animation: stamp-title 0.55s cubic-bezier(0.2, 0.9, 0.2, 1) both; }
+.stamp-in .stamp-line { animation: stamp-line 0.6s ease-out both; }
+.stamp-in .stamp-line:nth-child(1) { animation-delay: 0.35s; }
+.stamp-in .stamp-line:nth-child(3) { animation-delay: 0.5s; }
+.stamp-in .stamp-line:nth-child(4) { animation-delay: 0.62s; }
+.stamp-in .stamp-line:nth-child(5) { animation-delay: 0.74s; }
+@keyframes stamp-title {
+  0%   { opacity: 0; transform: scale(1.06) translateY(4px); filter: blur(2px); text-shadow: 6px 4px 0 rgba(217,164,65,0.9); }
+  60%  { opacity: 1; transform: scale(0.995) translateY(0); filter: blur(0); text-shadow: 3px 2px 0 rgba(217,164,65,0.7); }
+  100% { opacity: 1; transform: none; text-shadow: 1px 1px 0 rgba(217,164,65,0.45); }
+}
+@keyframes stamp-line { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.stamp-in .wordmark { text-shadow: 1px 1px 0 rgba(217,164,65,0.45); }
+@media (prefers-reduced-motion: reduce) {
+  .stamp-wait .stamp-title, .stamp-wait .stamp-line { opacity: 1; }
+  .stamp-in .stamp-title, .stamp-in .stamp-line { animation: none; }
+}

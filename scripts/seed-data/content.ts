@@ -122,6 +122,7 @@ export const VIDEOS = [
   { youtube_id: "uDHHqlJX8nQ", title: "Visit Port Aransas — musician feature", kind: "other", duration: "0:30", sort: 13 },
   { youtube_id: "Ib_2ZqCjByk", title: "Know That About You (Rdrokit Power)", kind: "live", duration: "6:03", sort: 14 },
   { youtube_id: "IZYGcfhkysg", title: "Love and Sound", kind: "live", duration: "", sort: 15 },
+  { youtube_id: "389f_MDGo70", title: "Tom Cat No More — The Golden Mic (Raps and Apps)", kind: "other", duration: "", sort: 16 },
 ];
 
 // Past dated shows worth keeping on the record (from the old Bandzoogle site).
