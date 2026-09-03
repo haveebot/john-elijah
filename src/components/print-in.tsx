@@ -130,7 +130,7 @@ export function PrintIn({ src, onPhase }: { src: string; onPhase?: (phase: "prin
     const img = new Image();
     img.crossOrigin = "anonymous";
     // same-origin through the optimizer so the texture isn't tainted
-    img.src = `/_next/image?url=${encodeURIComponent(src)}&w=1920&q=78`;
+    img.src = `/_next/image?url=${encodeURIComponent(src)}&w=1920&q=75`;
     img.onload = () => {
       if (disposed) return;
       const compile = (type: number, s: string) => {
