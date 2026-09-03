@@ -59,13 +59,13 @@ void main() {
   }
 
   vec2 target = aTarget * uFit;
-  float dAssemble = 1.2 + aOrder * 1.8;
+  float dAssemble = 0.15 + aOrder * 1.7;
   float tA = clamp((uTime - dAssemble) / 1.1, 0.0, 1.0);
   float e = easeOutCubic(tA);
   vec2 scatter0 = target + aSeed.xy * (1.5 + aSeed.z * 1.4) + vec2(0.0, -0.9);
   vec2 pos = mix(scatter0, target, e);
 
-  float idle = smoothstep(4.4, 5.4, uTime);
+  float idle = smoothstep(3.2, 4.2, uTime);
   pos += idle * vec2(sin(uTime * 0.8 + aSeed.z * 40.0), cos(uTime * 0.7 + aSeed.z * 34.0)) * 0.0014;
   float sway = sin(uTime * 0.2) * 0.014 * idle;
   pos.x += sway * pos.y;
@@ -122,7 +122,7 @@ void main() {
   }
 
   float soft = smoothstep(0.5, 0.05, d);
-  float settled = smoothstep(4.6, 5.6, uTime);
+  float settled = smoothstep(3.3, 4.4, uTime);
   float cur1 = smoothstep(0.30, 0.0, abs(vOrder - fract(uTime * 0.05)));
   float cur2 = smoothstep(0.24, 0.0, abs((1.0 - vOrder) - fract(uTime * 0.035 + 0.5)));
   float rest = settled * (0.30 + 0.35 * cur1 + 0.20 * cur2) + (1.0 - settled) * 0.12;
@@ -159,8 +159,8 @@ uniform float uAspect;
 uniform float uFit;
 uniform vec2 uPointer;
 uniform float uMobile;
-uniform float uHalfW;   // half-width of the sign in pre-aspect units
-uniform float uHalfH;   // half-height
+uniform float uHalfW;
+uniform float uHalfH;
 
 float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 float noise(vec2 p) {
@@ -170,40 +170,48 @@ float noise(vec2 p) {
 }
 
 void main() {
+  // radial from the sign's centre — the OG card look
   vec2 p = vec2(vUv.x * uAspect, vUv.y - 0.12 * uFit);
-  float settled = smoothstep(4.4, 6.4, uTime);
-  float ignite = smoothstep(3.3, 4.2, uTime) * (1.0 - smoothstep(4.2, 6.0, uTime));
+  float r = length(p);
+  float ang = atan(p.y, p.x + 1e-4);
 
-  // light comes off the whole sign, not a point: measure from the sign's bar
-  vec2 q = vec2(clamp(p.x, -uHalfW, uHalfW), clamp(p.y, -uHalfH * 0.6, uHalfH * 0.6));
-  vec2 v = p - q;
-  float dist = length(v);
-  float ang = atan(v.y, v.x + 1e-4);
+  // timeline: letters lock ~3.0s → burst 3.0–4.4s → steady after
+  float landed = smoothstep(2.95, 3.25, uTime);
+  float burst = landed * (1.0 - smoothstep(3.1, 4.6, uTime));
+  float steady = smoothstep(3.4, 5.2, uTime);
 
-  // five broad, soft shafts drifting slowly; a sixth slow one crosses the other way
-  float shafts = 0.0;
-  shafts += pow(0.5 + 0.5 * cos(ang * 5.0 + uTime * 0.09), 5.0) * 0.45;
-  shafts += pow(0.5 + 0.5 * cos(ang * 3.0 - uTime * 0.06 + 1.1), 6.0) * 0.35;
-  shafts += pow(0.5 + 0.5 * cos(ang * 8.0 + uTime * 0.04 + 2.3), 9.0) * 0.20;
-  // slow haze in the beams so they read as light in air, not vector strokes
-  float haze = 0.75 + 0.25 * noise(vec2(ang * 3.0, dist * 1.5 - uTime * 0.12));
-  // fall off with distance from the sign; nothing hard near it
-  float fall = smoothstep(2.4, 0.15, dist) * smoothstep(0.0, 0.25, dist);
-  // a soft bloom hugging the letters
-  float hug = smoothstep(0.55, 0.0, dist) * 0.10;
+  // three ray families, slow drift, soft edges (the OG's families, tamed)
+  float rays = 0.0;
+  rays += pow(max(sin(ang * 14.0 + uTime * 0.05 + 0.4), 0.0), 5.0) * 0.55;
+  rays += pow(max(sin(ang * 22.0 - uTime * 0.03 + 1.7), 0.0), 7.0) * 0.45;
+  rays += pow(max(sin(ang * 9.0 + uTime * 0.02 + 0.6), 0.0), 3.5) * 0.35;
+  // haze so the beams read as light in air
+  rays *= 0.7 + 0.3 * noise(vec2(ang * 4.0, r * 2.0 - uTime * 0.15));
+  // per-beam slow flicker
+  rays *= 0.85 + 0.15 * sin(uTime * 0.6 + ang * 5.0);
 
-  // a beam that leans toward the cursor
-  float pAng = atan(uPointer.y - 0.12 * uFit - q.y, uPointer.x - q.x + 1e-4);
+  // the sign's footprint: rays start just outside the letters, fade toward the frame edge
+  vec2 e = p / vec2(max(uHalfW, 0.2), max(uHalfH, 0.2));
+  float inMark = 1.0 - smoothstep(0.75, 1.15, length(e));
+  float fall = smoothstep(2.8, 0.25, r);
+  float glowCore = inMark * 0.10;
+
+  // cursor: a beam leans toward the pointer
+  float pAng = atan(uPointer.y - 0.12 * uFit, uPointer.x + 1e-4);
   float d = abs(mod(ang - pAng + 3.14159, 6.28318) - 3.14159);
-  float cursorBeam = pow(smoothstep(0.7, 0.0, d), 2.0) * fall * 0.35;
+  float cursorBeam = pow(smoothstep(0.6, 0.0, d), 2.0) * fall * 0.35;
+
+  // the burst: rays flare hard and a ring of light rolls out from the sign
+  float ringR = (uTime - 2.95) * 1.6;
+  float ring = smoothstep(0.35, 0.0, abs(r - ringR)) * burst;
+  float flare = rays * burst * 2.4 + ring * 0.9 + inMark * burst * 0.35;
 
   vec3 brass = vec3(0.851, 0.643, 0.255);
   vec3 cream = vec3(0.953, 0.918, 0.847);
-  vec3 tone = mix(brass, cream, 0.3);
-  float breath = 0.85 + 0.15 * sin(uTime * 0.45);
-  float amt = (shafts * haze * fall * 0.42 + hug + cursorBeam) * breath;
-  vec3 col = tone * amt * settled + cream * ignite * smoothstep(0.7, 0.0, dist) * 0.18;
-  // additive light only: alpha stays 0 so the photo underneath is never covered
+  vec3 tone = mix(brass, cream, 0.25);
+  float breath = 0.9 + 0.1 * sin(uTime * 0.4);
+  float steadyAmt = (rays * fall * (0.55 + 0.45 * (1.0 - inMark)) * 0.62 + glowCore + cursorBeam) * breath * steady;
+  vec3 col = tone * steadyAmt + mix(tone, cream, 0.5) * flare;
   gl_FragColor = vec4(col, 0.0);
 }
 `;
@@ -291,11 +299,8 @@ export function StageIdent({ onReady }: { onReady?: (ready: boolean) => void }) 
 
     const start = async () => {
       const font = getComputedStyle(document.documentElement).getPropertyValue("--font-oswald").trim() || "Oswald";
-      try {
-        await document.fonts.load(`600 92px ${font}`);
-      } catch {
-        /* fall through with fallback font */
-      }
+      // the page already loaded Oswald for the nav wordmark; never wait more than 150ms for it
+      await Promise.race([document.fonts.load(`600 92px ${font}`).catch(() => null), new Promise((r) => setTimeout(r, 150))]);
       if (disposed) return;
       const isMobile = window.innerWidth < 768;
       const lines = isMobile ? ["JOHN", "ELIJAH"] : ["JOHN ELIJAH"];
@@ -391,6 +396,7 @@ export function StageIdent({ onReady }: { onReady?: (ready: boolean) => void }) 
 
       setReady(true);
       onReady?.(true);
+      startedAt = performance.now(); // the clock starts when the first frame can draw
 
       const frame = () => {
         if (disposed) return;
@@ -453,7 +459,7 @@ export function StageIdent({ onReady }: { onReady?: (ready: boolean) => void }) 
   return (
     <canvas
       ref={canvasRef}
-      className={`absolute inset-0 h-full w-full touch-pan-y transition-opacity duration-1000 ${ready ? "opacity-100" : "opacity-0"}`}
+      className={`absolute inset-0 h-full w-full touch-pan-y transition-opacity duration-200 ${ready ? "opacity-100" : "opacity-0"}`}
       aria-hidden
     />
   );
