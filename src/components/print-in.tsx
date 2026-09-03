@@ -126,6 +126,7 @@ export function PrintIn({ src, onPhase }: { src: string; onPhase?: (phase: "prin
     let disposed = false;
     let startedAt = performance.now();
     let settledFired = false;
+    const timers: number[] = [];
 
     const img = new Image();
     img.crossOrigin = "anonymous";
@@ -195,6 +196,9 @@ export function PrintIn({ src, onPhase }: { src: string; onPhase?: (phase: "prin
 
       setReady(true);
       onPhase?.("printing");
+      // safety: the type must never stay hidden if rAF is throttled (hidden tab, low-power)
+      const settleTimer = window.setTimeout(() => { if (!settledFired) { settledFired = true; onPhase?.("settled"); } }, 3600);
+      timers.push(settleTimer);
 
       const frame = () => {
         if (disposed) return;
@@ -224,6 +228,7 @@ export function PrintIn({ src, onPhase }: { src: string; onPhase?: (phase: "prin
     return () => {
       disposed = true;
       cancelAnimationFrame(raf);
+      for (const t of timers) window.clearTimeout(t);
     };
   }, [src, onPhase]);
 
