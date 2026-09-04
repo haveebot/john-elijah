@@ -59,7 +59,7 @@ export function StagePlot({ configuration, label }: { configuration: string; lab
   const plot = stagePlotFor(configuration);
   return (
     <figure className="rounded-lg border border-canvas-edge/60 bg-canvas-raised p-4">
-      <svg viewBox="0 0 100 90" className="w-full" role="img" aria-label={`Stage plot — ${label}`}>
+      <svg viewBox="0 0 100 90" className="w-full" role="img" aria-label={`Stage plot: ${label}`}>
         <rect x="4" y="8" width="92" height="66" rx="2" fill="none" stroke="#2a251c" strokeWidth="1" />
         <text x="50" y="5" textAnchor="middle" fontSize="3.6" fill="#6f6756" letterSpacing="0.6">UPSTAGE</text>
         <text x="50" y="86" textAnchor="middle" fontSize="3.6" fill="#6f6756" letterSpacing="0.6">AUDIENCE</text>
