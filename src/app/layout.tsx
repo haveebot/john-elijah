@@ -10,8 +10,8 @@ const yellowtail = Yellowtail({ subsets: ["latin"], weight: "400", variable: "--
 
 export const metadata: Metadata = {
   title: {
-    default: `${SITE.name} — ${SITE.tagline}`,
-    template: `%s — ${SITE.name}`,
+    default: `${SITE.name} · ${SITE.tagline}`,
+    template: `%s · ${SITE.name}`,
   },
   description: SITE.description,
   metadataBase: new URL(SITE.domain),
@@ -21,14 +21,14 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: SITE.name,
-    title: `${SITE.name} — ${SITE.tagline}`,
+    title: `${SITE.name} · ${SITE.tagline}`,
     description: SITE.description,
     url: SITE.domain,
     images: [{ url: "/og.jpg", width: 1200, height: 630, alt: `${SITE.name} on stage` }],
   },
   twitter: {
     card: "summary_large_image",
-    title: `${SITE.name} — ${SITE.tagline}`,
+    title: `${SITE.name} · ${SITE.tagline}`,
     description: SITE.description,
     images: ["/og.jpg"],
   },
