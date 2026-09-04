@@ -6,6 +6,7 @@ const HQ_NAV = [
   { href: "/hq", label: "Today" },
   { href: "/hq/bookings", label: "Bookings" },
   { href: "/hq/venues", label: "Venues" },
+  { href: "/hq/outreach", label: "Outreach" },
   { href: "/hq/shows", label: "Shows" },
   { href: "/hq/music", label: "Music" },
   { href: "/hq/photos", label: "Photos" },

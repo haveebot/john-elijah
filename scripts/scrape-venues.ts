@@ -30,7 +30,7 @@ const CORE = ["27.3,-98.2,28.5,-96.5", "29.2,-99.2,30.2,-97.8", "29.9,-99.6,30.7
 
 async function overpass(q: string): Promise<{ tags: Record<string, string>; id: number; type: string; lat?: number; lon?: number; center?: { lat: number; lon: number } }[]> {
   const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(q)}`;
-  const res = await fetch(url, { headers: { Accept: "application/json", "User-Agent": UA } });
+  const res = await fetch(url, { headers: { Accept: "application/json", "User-Agent": "john-elijah-hq/1.0 (venue research; booking@johnelijahmusic.com)" } });
   if (!res.ok) throw new Error(`overpass ${res.status}`);
   const j = (await res.json()) as { elements: never[] };
   return j.elements as never[];

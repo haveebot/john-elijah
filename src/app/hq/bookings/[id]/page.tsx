@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { getBooking, listBookingEvents, listConfigurations, listTravelBands, BOOKING_STATUSES, STATUS_LABELS } from "@/lib/db/bookings";
 import { estimateCents, dollars } from "@/lib/quote";
 import { depositUrl } from "@/lib/deposit";
+import { listPlayers, listBookingPlayers, listExpenses, showPnl, listRuns } from "@/lib/db/finance";
+import { ShowMoney } from "./show-money";
 import { stripeEnabled } from "@/lib/stripe";
 import { getShowForBooking } from "@/lib/db/shows";
 import { mailEnabled } from "@/lib/mail";
@@ -31,6 +33,7 @@ export default async function BookingDetail({ params }: { params: Promise<{ id: 
     getShowForBooking(id),
   ]);
   if (!booking) notFound();
+  const [players, lineup, expenses, pnl, runs] = await Promise.all([listPlayers(true), listBookingPlayers(booking.id), listExpenses(booking.id), showPnl(booking.id), listRuns()]);
 
   const config = configs.find((c) => c.key === booking.configuration);
   const band = bands.find((b) => b.key === booking.travel_band);
@@ -180,6 +183,8 @@ export default async function BookingDetail({ params }: { params: Promise<{ id: 
           </form>
         </div>
       </div>
+
+      <ShowMoney booking={{ id: booking.id, quote_cents: booking.quote_cents, paid_cents: booking.paid_cents ?? 0, run_id: booking.run_id ?? null }} players={players} lineup={lineup} expenses={expenses} pnl={pnl} runs={runs} />
 
       <section className="mt-10">
         <h2 className="label mb-4">Activity</h2>

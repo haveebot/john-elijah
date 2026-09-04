@@ -2,19 +2,21 @@ import { listAgentTokens } from "@/lib/db/agent-tokens";
 import { listConfigurations, listTravelBands } from "@/lib/db/bookings";
 import { STANDARD_HOURS, EXTRA_HOUR_PCT } from "@/lib/quote";
 import { query } from "@/lib/db/client";
-import { actionDeleteAgentToken, actionSetRate, actionSetTravelFee } from "../actions";
+import { actionDeleteAgentToken, actionSetRate, actionSetTravelFee, actionUpsertPlayer } from "../actions";
+import { listPlayers } from "@/lib/db/finance";
 import { TokenCreator } from "./token-creator";
 
 export const dynamic = "force-dynamic";
 
 export default async function HqSettings() {
-  const [tokens, configs, bands, subs] = await Promise.all([
+  const [tokens, configs, bands, subs, players] = await Promise.all([
     listAgentTokens(),
     listConfigurations(),
     listTravelBands(),
     query<{ email: string; source: string; created_at: string }>(
       `SELECT email, source, created_at FROM subscribers ORDER BY created_at DESC LIMIT 100`,
     ),
+    listPlayers(),
   ]);
 
   return (
@@ -63,6 +65,34 @@ export default async function HqSettings() {
             </li>
           ))}
         </ul>
+      </section>
+
+      <section className="mt-12">
+        <h2 className="label mb-3">Players · payroll</h2>
+        <p className="mb-3 text-xs text-ink-faint">Default per-show rate for a standard night. Each booking pulls the lineup from here; rates can be changed per show.</p>
+        <div className="space-y-2">
+          {players.map((p) => (
+            <form key={p.id} action={actionUpsertPlayer} className="grid grid-cols-2 items-end gap-2 rounded-lg border border-canvas-edge/60 bg-canvas-raised p-3 md:grid-cols-7">
+              <input type="hidden" name="name" value={p.name} />
+              <p className="wordmark text-lg md:col-span-1">{p.name}</p>
+              <label className="text-xs text-ink-faint">Instrument<input name="instrument" defaultValue={p.instrument} className="field mt-1 py-1.5 text-sm" /></label>
+              <label className="text-xs text-ink-faint">Rate $<input name="rate_dollars" type="number" min="0" step="5" defaultValue={p.default_rate_cents / 100} className="field mt-1 py-1.5 text-sm" /></label>
+              <label className="text-xs text-ink-faint">Pay via<input name="pay_method" defaultValue={p.pay_method} placeholder="venmo / zelle / cash" className="field mt-1 py-1.5 text-sm" /></label>
+              <label className="text-xs text-ink-faint">Handle<input name="pay_handle" defaultValue={p.pay_handle} className="field mt-1 py-1.5 text-sm" /></label>
+              <label className="flex items-center gap-2 text-xs text-ink-faint"><input type="checkbox" name="is_leader" defaultChecked={p.is_leader} /> leader<input type="hidden" name="is_active" value={p.is_active ? "on" : "off"} /><input type="hidden" name="sort" value={p.sort} /></label>
+              <button type="submit" className="btn btn-ghost btn-sm">Save</button>
+            </form>
+          ))}
+          <form action={actionUpsertPlayer} className="grid grid-cols-2 items-end gap-2 rounded-lg border border-dashed border-canvas-edge/60 p-3 md:grid-cols-7">
+            <label className="text-xs text-ink-faint">Name<input name="name" required className="field mt-1 py-1.5 text-sm" /></label>
+            <label className="text-xs text-ink-faint">Instrument<input name="instrument" className="field mt-1 py-1.5 text-sm" /></label>
+            <label className="text-xs text-ink-faint">Rate $<input name="rate_dollars" type="number" min="0" step="5" className="field mt-1 py-1.5 text-sm" /></label>
+            <label className="text-xs text-ink-faint">Pay via<input name="pay_method" className="field mt-1 py-1.5 text-sm" /></label>
+            <label className="text-xs text-ink-faint">Handle<input name="pay_handle" className="field mt-1 py-1.5 text-sm" /></label>
+            <label className="flex items-center gap-2 text-xs text-ink-faint"><input type="checkbox" name="is_leader" /> leader</label>
+            <button type="submit" className="btn btn-brass btn-sm">Add player</button>
+          </form>
+        </div>
       </section>
 
       <section className="mt-12">

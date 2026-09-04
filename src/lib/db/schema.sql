@@ -366,3 +366,70 @@ CREATE TABLE IF NOT EXISTS venue_activity (
 );
 
 ALTER TABLE bookings ADD COLUMN IF NOT EXISTS venue_id INT REFERENCES venues(id) ON DELETE SET NULL;
+
+-- ───────────────────────── outreach queue (batch mode) ─────────────────────────
+
+ALTER TABLE venues ADD COLUMN IF NOT EXISTS touch_count INT NOT NULL DEFAULT 0;
+
+CREATE TABLE IF NOT EXISTS outreach_queue (
+  id            SERIAL PRIMARY KEY,
+  venue_id      INT NOT NULL REFERENCES venues(id) ON DELETE CASCADE,
+  to_email      TEXT NOT NULL,
+  to_name       TEXT NOT NULL DEFAULT '',
+  subject       TEXT NOT NULL,
+  body          TEXT NOT NULL,
+  touch         INT NOT NULL DEFAULT 1,            -- 1 first touch · 2 day-7 bump · 3 day-21 close
+  status        TEXT NOT NULL DEFAULT 'draft',     -- draft|approved|sent|failed|skipped
+  scheduled_for DATE,
+  sent_at       TIMESTAMPTZ,
+  error         TEXT,
+  created_by    TEXT NOT NULL DEFAULT '',
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS outreach_queue_status_idx ON outreach_queue (status, scheduled_for, id);
+CREATE UNIQUE INDEX IF NOT EXISTS outreach_queue_one_open_per_venue ON outreach_queue (venue_id) WHERE status IN ('draft','approved');
+
+-- ───────────────────────── payroll + tour finance ─────────────────────────
+
+CREATE TABLE IF NOT EXISTS players (
+  id                 SERIAL PRIMARY KEY,
+  name               TEXT NOT NULL UNIQUE,
+  instrument         TEXT NOT NULL DEFAULT '',
+  default_rate_cents INT NOT NULL DEFAULT 0,      -- per show, standard night
+  pay_method         TEXT NOT NULL DEFAULT '',    -- venmo|zelle|cash|check
+  pay_handle         TEXT NOT NULL DEFAULT '',
+  is_leader          BOOLEAN NOT NULL DEFAULT false,
+  is_active          BOOLEAN NOT NULL DEFAULT true,
+  sort               INT NOT NULL DEFAULT 100
+);
+
+CREATE TABLE IF NOT EXISTS runs (
+  id         SERIAL PRIMARY KEY,
+  name       TEXT NOT NULL,
+  starts_on  DATE,
+  ends_on    DATE,
+  notes      TEXT NOT NULL DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS run_id INT REFERENCES runs(id) ON DELETE SET NULL;
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS paid_cents INT NOT NULL DEFAULT 0;   -- what the client has actually paid (deposit + balance)
+
+CREATE TABLE IF NOT EXISTS booking_players (
+  id         SERIAL PRIMARY KEY,
+  booking_id INT NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+  player_id  INT NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+  rate_cents INT NOT NULL DEFAULT 0,
+  paid       BOOLEAN NOT NULL DEFAULT false,
+  paid_at    TIMESTAMPTZ,
+  UNIQUE (booking_id, player_id)
+);
+
+CREATE TABLE IF NOT EXISTS booking_expenses (
+  id           SERIAL PRIMARY KEY,
+  booking_id   INT NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+  kind         TEXT NOT NULL DEFAULT 'other',   -- fuel|lodging|food|gear|sound|merch|fees|other
+  amount_cents INT NOT NULL DEFAULT 0,
+  note         TEXT NOT NULL DEFAULT '',
+  paid_by      TEXT NOT NULL DEFAULT '',        -- band|John|<player>
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);

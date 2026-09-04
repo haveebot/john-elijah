@@ -36,6 +36,9 @@ import { setOrderStatus, upsertProduct, getOrder, recordShipment, markShipmentPu
 import { createShipment, purchaseLabel, stripeShippingToAddress, shippoEnabled } from "@/lib/shippo";
 import { sendMail } from "@/lib/mail";
 import { SITE } from "@/lib/site";
+import { buildDrafts, dueVenueIds, drain, setQueueStatus, updateQueueRow } from "@/lib/db/outreach-queue";
+import { listVenues } from "@/lib/db/venues";
+import { upsertPlayer, addBookingPlayer, setBookingPlayerPaid, setBookingPlayerRate, removeBookingPlayer, addExpense, removeExpense, setBookingPaid, createRun } from "@/lib/db/finance";
 
 async function requireOperator(): Promise<string> {
   const who = await getCurrentOperator();
@@ -705,4 +708,155 @@ export async function actionDeleteAgentToken(formData: FormData) {
   if (!Number.isInteger(id)) return;
   await deleteAgentToken(id);
   revalidatePath("/hq/settings");
+}
+
+
+// ── outreach batch mode ─────────────────────────────────────────────
+
+export async function actionBuildBatch(formData: FormData) {
+  const who = await requireOperator();
+  const region = String(formData.get("region") ?? "");
+  const kind = String(formData.get("kind") ?? "");
+  const minScore = Number(formData.get("min_score") ?? 60) || 0;
+  const limit = Math.max(1, Math.min(100, Number(formData.get("limit") ?? 20) || 20));
+  const venues = await listVenues({ region: region || undefined, kind: kind || undefined, hasEmail: true, limit: 2000 });
+  const ids = venues.filter((v) => v.score >= minScore && (v.status === "new" || v.status === "researched")).slice(0, limit).map((v) => v.id);
+  const r = await buildDrafts(ids, who, who);
+  revalidatePath("/hq/outreach");
+  redirect(`/hq/outreach?status=draft&result=${encodeURIComponent(`${r.drafted} drafted, ${r.skipped} skipped (no address, already open, or past first touch)`)}`);
+}
+
+export async function actionQueueStops(formData: FormData) {
+  const who = await requireOperator();
+  const ids = formData.getAll("ids").map((x) => Number(x)).filter(Boolean);
+  const r = await buildDrafts(ids, who, who);
+  revalidatePath("/hq/outreach");
+  redirect(`/hq/outreach?status=draft&result=${encodeURIComponent(`${r.drafted} drafted from the route, ${r.skipped} skipped`)}`);
+}
+
+export async function actionDraftDue(_formData: FormData) {
+  const who = await requireOperator();
+  const due = await dueVenueIds(50);
+  const r = due.length ? await buildDrafts(due, who, who) : { drafted: 0, skipped: 0 };
+  revalidatePath("/hq/outreach");
+  redirect(`/hq/outreach?status=draft&result=${encodeURIComponent(`${r.drafted} follow-ups drafted`)}`);
+}
+
+export async function actionApproveQueue(formData: FormData) {
+  await requireOperator();
+  const ids = formData.getAll("ids").map((x) => Number(x)).filter(Boolean);
+  await setQueueStatus(ids, "approved");
+  revalidatePath("/hq/outreach");
+  redirect(`/hq/outreach?status=approved&result=${encodeURIComponent(`${ids.length} approved; the sender takes it from here`)}`);
+}
+
+export async function actionSkipQueue(formData: FormData) {
+  await requireOperator();
+  const ids = formData.getAll("ids").map((x) => Number(x)).filter(Boolean);
+  await setQueueStatus(ids, "skipped");
+  revalidatePath("/hq/outreach");
+}
+
+export async function actionUpdateQueueRow(formData: FormData) {
+  await requireOperator();
+  const id = Number(formData.get("id"));
+  const intent = String(formData.get("intent") ?? "save");
+  const patch: { subject?: string; body?: string; to_email?: string; status?: string } = {
+    subject: String(formData.get("subject") ?? "").trim(),
+    body: String(formData.get("body") ?? "").trim(),
+    to_email: String(formData.get("to_email") ?? "").trim().toLowerCase(),
+  };
+  if (intent === "approve") patch.status = "approved";
+  if (intent === "skip") patch.status = "skipped";
+  await updateQueueRow(id, patch);
+  revalidatePath("/hq/outreach");
+  if (intent === "approve") redirect("/hq/outreach?status=draft");
+}
+
+export async function actionSendNext(formData: FormData) {
+  const who = await requireOperator();
+  const n = Math.max(1, Math.min(10, Number(formData.get("n") ?? 10) || 10));
+  const r = await drain(n, who);
+  revalidatePath("/hq/outreach");
+  revalidatePath("/hq/venues");
+  redirect(`/hq/outreach?status=sent&result=${encodeURIComponent(`${r.sent} sent, ${r.failed} failed. ${r.details.join(" · ")}`)}`);
+}
+
+// ── payroll + tour finance ──────────────────────────────────────────
+
+export async function actionUpsertPlayer(formData: FormData) {
+  await requireOperator();
+  const name = String(formData.get("name") ?? "").trim();
+  if (!name) return;
+  await upsertPlayer({
+    name,
+    instrument: String(formData.get("instrument") ?? "").trim(),
+    default_rate_cents: Math.round((Number(formData.get("rate_dollars") ?? 0) || 0) * 100),
+    pay_method: String(formData.get("pay_method") ?? "").trim(),
+    pay_handle: String(formData.get("pay_handle") ?? "").trim(),
+    is_leader: formData.get("is_leader") === "on",
+    is_active: formData.get("is_active") !== "off",
+    sort: Number(formData.get("sort") ?? 100) || 100,
+  });
+  revalidatePath("/hq/settings");
+}
+
+export async function actionAddBookingPlayer(formData: FormData) {
+  await requireOperator();
+  const bookingId = Number(formData.get("booking_id"));
+  const playerId = Number(formData.get("player_id"));
+  const rate = formData.get("rate_dollars");
+  await addBookingPlayer(bookingId, playerId, rate ? Math.round(Number(rate) * 100) : undefined);
+  revalidatePath(`/hq/bookings/${bookingId}`);
+}
+
+export async function actionSetBookingPlayer(formData: FormData) {
+  await requireOperator();
+  const id = Number(formData.get("id"));
+  const bookingId = Number(formData.get("booking_id"));
+  const intent = String(formData.get("intent") ?? "");
+  if (intent === "paid") await setBookingPlayerPaid(id, true);
+  else if (intent === "unpaid") await setBookingPlayerPaid(id, false);
+  else if (intent === "remove") await removeBookingPlayer(id);
+  else if (intent === "rate") await setBookingPlayerRate(id, Math.round((Number(formData.get("rate_dollars") ?? 0) || 0) * 100));
+  revalidatePath(`/hq/bookings/${bookingId}`);
+}
+
+export async function actionAddExpense(formData: FormData) {
+  await requireOperator();
+  const bookingId = Number(formData.get("booking_id"));
+  const amount = Math.round((Number(formData.get("amount_dollars") ?? 0) || 0) * 100);
+  if (!amount) return;
+  await addExpense(bookingId, { kind: String(formData.get("kind") ?? "other"), amount_cents: amount, note: String(formData.get("note") ?? "").trim(), paid_by: String(formData.get("paid_by") ?? "").trim() });
+  revalidatePath(`/hq/bookings/${bookingId}`);
+}
+
+export async function actionRemoveExpense(formData: FormData) {
+  await requireOperator();
+  const bookingId = Number(formData.get("booking_id"));
+  await removeExpense(Number(formData.get("id")));
+  revalidatePath(`/hq/bookings/${bookingId}`);
+}
+
+export async function actionSetBookingPaid(formData: FormData) {
+  await requireOperator();
+  const bookingId = Number(formData.get("booking_id"));
+  await setBookingPaid(bookingId, Math.round((Number(formData.get("paid_dollars") ?? 0) || 0) * 100));
+  revalidatePath(`/hq/bookings/${bookingId}`);
+}
+
+export async function actionSetBookingRun(formData: FormData) {
+  await requireOperator();
+  const bookingId = Number(formData.get("booking_id"));
+  const raw = String(formData.get("run_id") ?? "");
+  let runId: number | null = raw && raw !== "new" ? Number(raw) : null;
+  if (raw === "new") {
+    const name = String(formData.get("new_run_name") ?? "").trim();
+    if (!name) return;
+    const run = await createRun(name, null, null);
+    runId = run.id;
+  }
+  await query(`UPDATE bookings SET run_id = $2, updated_at = now() WHERE id = $1`, [bookingId, runId]);
+  revalidatePath(`/hq/bookings/${bookingId}`);
+  revalidatePath("/hq/bookings");
 }

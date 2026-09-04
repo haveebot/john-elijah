@@ -25,6 +25,11 @@ export default async function HqVenues({ searchParams }: { searchParams: Promise
         {counts.withEmail} with an email we actually found · {counts.byStatus.contacted ?? 0} contacted · {counts.byStatus.replied ?? 0} replied · {counts.byStatus.booked ?? 0} booked · {counts.due} due for a follow-up
       </p>
 
+      <p className="mt-3 flex flex-wrap gap-4 text-sm">
+        <Link href="/hq/outreach" className="brass-link text-ink">Outreach batch mode →</Link>
+        <Link href="/hq/venues/route" className="brass-link text-ink">Route planner →</Link>
+      </p>
+
       <div className="mt-6 flex flex-wrap gap-2">
         <Link href={qs({ region: undefined })} className={`btn btn-sm ${!sp.region ? "btn-brass" : "btn-ghost"}`}>All Texas</Link>
         {REGIONS.filter((r) => counts.byRegion[r]).map((r) => (

@@ -50,6 +50,7 @@ export type Venue = {
   tags: string[];
   last_contacted_at: string | null;
   next_touch_at: string | null;
+  touch_count?: number;
   created_at: string;
   updated_at: string;
   contact_count?: number;
@@ -169,7 +170,7 @@ export async function updateVenue(id: number, patch: Partial<Pick<Venue, "name" 
 }
 
 export async function markContacted(id: number): Promise<void> {
-  await query(`UPDATE venues SET status = CASE WHEN status IN ('new','researched') THEN 'contacted' ELSE status END, last_contacted_at = now(), next_touch_at = CURRENT_DATE + 7, updated_at = now() WHERE id = $1`, [id]);
+  await query(`UPDATE venues SET status = CASE WHEN status IN ('new','researched') THEN 'contacted' ELSE status END, last_contacted_at = now(), touch_count = GREATEST(touch_count, 1), next_touch_at = CURRENT_DATE + 7, updated_at = now() WHERE id = $1`, [id]);
 }
 
 export async function listVenueContacts(venueId: number): Promise<VenueContact[]> {

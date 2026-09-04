@@ -56,6 +56,8 @@ export type Booking = {
   estimate_cents: number | null;
   deposit_paid_at: string | null;
   deposit_session_id: string | null;
+  run_id?: number | null;
+  paid_cents?: number;
   created_at: string;
   updated_at: string;
 };
