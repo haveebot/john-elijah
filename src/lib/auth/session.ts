@@ -9,15 +9,17 @@ import {
   SESSION_TTL_MS,
   generateSessionValue,
   verifySessionValue,
+  type Session,
 } from "./session-tokens";
 
 export { SESSION_COOKIE, verifySessionValue };
+export type { Session };
 
-export async function setSessionCookie(email: string): Promise<void> {
+export async function setSessionCookie(session: Session): Promise<void> {
   const cookieStore = await cookies();
   cookieStore.set({
     name: SESSION_COOKIE,
-    value: await generateSessionValue(email),
+    value: await generateSessionValue(session),
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
@@ -31,7 +33,7 @@ export async function clearSessionCookie(): Promise<void> {
   cookieStore.delete(SESSION_COOKIE);
 }
 
-export async function getCurrentOperatorEmail(): Promise<string | null> {
+export async function getCurrentOperator(): Promise<Session | null> {
   const cookieStore = await cookies();
   const value = cookieStore.get(SESSION_COOKIE)?.value;
   if (!value) return null;

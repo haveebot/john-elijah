@@ -7,7 +7,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { getCurrentOperatorEmail } from "@/lib/auth/session";
+import { getCurrentOperator } from "@/lib/auth/session";
 import {
   updateBooking,
   addBookingEvent,
@@ -34,9 +34,9 @@ import { sendMail } from "@/lib/mail";
 import { SITE } from "@/lib/site";
 
 async function requireOperator(): Promise<string> {
-  const email = await getCurrentOperatorEmail();
-  if (!email) throw new Error("unauthorized");
-  return email;
+  const who = await getCurrentOperator();
+  if (!who) throw new Error("unauthorized");
+  return who.name;
 }
 
 const PUBLIC_PATHS = ["/", "/shows", "/music", "/photos", "/band", "/book", "/shop", "/epk", "/shows.ics"];

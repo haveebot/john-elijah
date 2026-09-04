@@ -1,19 +1,26 @@
 import { NextResponse } from "next/server";
-import { verifyUser } from "@/lib/db/users";
+import { userForCode } from "@/lib/auth/session-tokens";
 import { setSessionCookie } from "@/lib/auth/session";
 
+/**
+ * HQ login by per-person access code (HQ_CODES). Short memorable codes,
+ * so a failed attempt eats 800ms to blunt brute force.
+ */
 export async function POST(request: Request) {
-  let body: { email?: string; password?: string };
+  let body: { code?: unknown };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "bad-json" }, { status: 400 });
   }
+  const code = typeof body.code === "string" ? body.code : "";
+  if (!code || code.length > 64) return NextResponse.json({ error: "bad-code" }, { status: 400 });
 
-  const user = await verifyUser(String(body.email ?? ""), String(body.password ?? ""));
+  const user = userForCode(code);
   if (!user) {
-    return NextResponse.json({ error: "invalid-credentials" }, { status: 401 });
+    await new Promise((r) => setTimeout(r, 800));
+    return NextResponse.json({ error: "bad-code" }, { status: 401 });
   }
-  await setSessionCookie(user.email);
-  return NextResponse.json({ ok: true });
+  await setSessionCookie(user);
+  return NextResponse.json({ ok: true, name: user.name, role: user.role });
 }

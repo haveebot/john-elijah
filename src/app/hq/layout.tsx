@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { LogoutButton } from "./logout-button";
+import { getCurrentOperator } from "@/lib/auth/session";
 
 const HQ_NAV = [
   { href: "/hq", label: "Today" },
@@ -12,7 +13,8 @@ const HQ_NAV = [
   { href: "/hq/settings", label: "Settings" },
 ];
 
-export default function HqLayout({ children }: { children: React.ReactNode }) {
+export default async function HqLayout({ children }: { children: React.ReactNode }) {
+  const who = await getCurrentOperator();
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-40 border-b border-canvas-edge/60 bg-canvas/90 backdrop-blur">
@@ -27,6 +29,11 @@ export default function HqLayout({ children }: { children: React.ReactNode }) {
                 {item.label}
               </Link>
             ))}
+            {who ? (
+              <span className="label whitespace-nowrap rounded-full border border-brass/50 px-3 py-1 text-brass">
+                {who.name} · {who.role}
+              </span>
+            ) : null}
             <LogoutButton />
           </nav>
         </div>

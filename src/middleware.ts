@@ -10,7 +10,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { SESSION_COOKIE, verifySessionValue } from "@/lib/auth/session-tokens";
 
-const PUBLIC_HQ_PATHS = ["/hq/login", "/hq/signup"];
+const PUBLIC_HQ_PATHS = ["/hq/login"];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -20,9 +20,9 @@ export async function middleware(request: NextRequest) {
   }
 
   const cookie = request.cookies.get(SESSION_COOKIE)?.value;
-  const email = cookie ? await verifySessionValue(cookie) : null;
+  const session = cookie ? await verifySessionValue(cookie) : null;
 
-  if (!email) {
+  if (!session) {
     return NextResponse.redirect(new URL("/hq/login", request.url));
   }
 

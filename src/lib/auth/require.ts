@@ -5,11 +5,11 @@
  */
 
 import { cookies, headers } from "next/headers";
-import { SESSION_COOKIE, verifySessionValue } from "./session-tokens";
+import { SESSION_COOKIE, verifySessionValue, type Role } from "./session-tokens";
 import { verifyAgentToken } from "@/lib/db/agent-tokens";
 
 export type AuthContext =
-  | { type: "user"; email: string }
+  | { type: "user"; name: string; role: Role }
   | { type: "agent"; tokenId: number; tokenName: string };
 
 export async function requireAuth(): Promise<AuthContext | Response> {
@@ -32,8 +32,8 @@ export async function requireAuth(): Promise<AuthContext | Response> {
   const cookieStore = await cookies();
   const cookie = cookieStore.get(SESSION_COOKIE)?.value;
   if (cookie) {
-    const email = await verifySessionValue(cookie);
-    if (email) return { type: "user", email };
+    const session = await verifySessionValue(cookie);
+    if (session) return { type: "user", name: session.name, role: session.role };
   }
 
   return new Response(JSON.stringify({ error: "unauthorized" }), {

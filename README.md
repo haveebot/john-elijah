@@ -14,6 +14,7 @@ Dank & Co / FC Hub lineage.
   shows + residencies; music/band/press; photo library (tags drive the site); merch catalog;
   orders with **Shippo labels**; rate card; MCP agent tokens.
 - **MCP** at `/api/mcp` (bearer tokens minted in HQ → Settings).
+- **HQ login** = per-person access code (`HQ_CODES` env, Palm Republic pattern); session carries name + role.
 
 ## Stack
 
