@@ -21,3 +21,12 @@ Less Texas country, more record-culture and stage. Site palette (black, cream, b
 - I-revue: 70s soul revue, misregistered print with a halftone fade. Shrikhand + Bowlby One + Yellowtail.
 
 Regenerate with `python3 build2.py` (needs the extra Google fonts listed at the top of the specimen: Sigmar One, Lobster, Archivo Black, Anton, Oswald 700, Shrikhand, Bowlby One).
+
+## Set three, concept first (2026-09-04, evening)
+
+Drawn geometry and light fields, no typeface as the subject. Each comes from John's own material.
+
+- 1b-almost: the name as a star chart, stroke skeleton sampled into stars with constellation lines; `lift` fully formed, `sweep` dissolving on the right. Raster (numpy), regenerate with build3b.py.
+- 2b-ligature: Take and Give. One spine shared by J and E, arms right, hook left. Two-tone and mono-in-circle. Vector.
+- 3b-one-line: the signature as a single stroke (skeleton of a connected script, dots kept as two beats), then a signal burst, then flat. Vector.
+- 4b-haze: light as the subject; the name at the horizon, eaten by the sun's core, broken glints on the water. Raster.
