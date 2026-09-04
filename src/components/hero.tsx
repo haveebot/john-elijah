@@ -45,7 +45,7 @@ export function Hero({ photo }: { photo: { url: string; alt: string } | null }) 
       </div>
 
       <div className="relative mx-auto w-full max-w-6xl px-5 pb-14 pt-40 md:pb-20">
-        <p className="script text-3xl text-brass md:text-5xl">Blues &amp; soul, live</p>
+        <p className="script text-3xl text-brass md:text-5xl">Blues &amp; Soul, Live</p>
         <h1 className={identOn ? "sr-only" : "mt-2"}>
           <Wordmark size="xl" />
         </h1>

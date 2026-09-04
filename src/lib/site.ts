@@ -6,7 +6,7 @@
 export const SITE = {
   name: "John Elijah",
   bandName: "John Elijah Band",
-  tagline: "Blues and soul, straight off the Texas coast.",
+  tagline: "Blues and Soul, straight off the Texas coast.",
   origin: "Port Aransas, Texas",
   domain: "https://johnelijahmusic.com",
   description:
