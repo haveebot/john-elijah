@@ -18,6 +18,7 @@ import { listAllAssets, updateAsset } from "@/lib/db/gallery";
 import { listOrders, listAllProducts } from "@/lib/db/commerce";
 import { subscriberCount } from "@/lib/db/engagement";
 import { listFiles } from "@/lib/db/files";
+import { listVenues, getVenue, upsertVenue, upsertVenueContact, addVenueActivity, updateVenue, listVenueContacts, listVenueActivity, venueCounts, VENUE_STATUSES } from "@/lib/db/venues";
 
 /**
  * MCP over HTTP (JSON-RPC 2.0) — agent access to John Elijah HQ.
@@ -47,6 +48,13 @@ const TOOLS = [
   { name: "tag_photo", description: "Set tags / alt / credit on a photo.", inputSchema: { type: "object", properties: { id: { type: "string" }, tags: { type: "array", items: { type: "string" } }, alt: { type: "string" }, credit: { type: "string" }, featured: { type: "boolean" } }, required: ["id"] } },
   { name: "list_products", description: "Merch catalog with variants + stock.", inputSchema: { type: "object", properties: {} } },
   { name: "list_orders", description: "Stripe orders.", inputSchema: { type: "object", properties: {} } },
+  { name: "list_venues", description: "Texas venues (outbound targets) with filters.", inputSchema: { type: "object", properties: { region: { type: "string" }, kind: { type: "string" }, status: { type: "string", enum: [...VENUE_STATUSES] }, q: { type: "string" }, has_email: { type: "boolean" }, limit: { type: "number" } } } },
+  { name: "get_venue", description: "One venue with contacts + activity.", inputSchema: { type: "object", properties: { id: { type: "number" } }, required: ["id"] } },
+  { name: "add_venue", description: "Add a venue (upserts by name+city).", inputSchema: { type: "object", properties: { name: { type: "string" }, city: { type: "string" }, kind: { type: "string" }, website: { type: "string" }, phone: { type: "string" }, email: { type: "string" }, capacity: { type: "number" }, notes: { type: "string" } }, required: ["name"] } },
+  { name: "add_venue_contact", description: "Add a person to a venue — only an address you actually found.", inputSchema: { type: "object", properties: { venue_id: { type: "number" }, name: { type: "string" }, role: { type: "string" }, email: { type: "string" }, phone: { type: "string" }, source: { type: "string" } }, required: ["venue_id"] } },
+  { name: "set_venue_status", description: "Move a venue to a status.", inputSchema: { type: "object", properties: { id: { type: "number" }, status: { type: "string", enum: [...VENUE_STATUSES] } }, required: ["id", "status"] } },
+  { name: "log_venue_activity", description: "Note / call / reply on a venue.", inputSchema: { type: "object", properties: { id: { type: "number" }, kind: { type: "string" }, body: { type: "string" } }, required: ["id", "body"] } },
+  { name: "venue_counts", description: "Outbound engine snapshot.", inputSchema: { type: "object", properties: {} } },
   { name: "list_files", description: "The shared drive (music, video, photos, designs, docs) with permanent links.", inputSchema: { type: "object", properties: { folder: { type: "string", enum: ["music", "video", "photos", "designs", "docs", "inbox"] } } } },
 ];
 
@@ -142,6 +150,25 @@ async function callTool(name: string, args: Json): Promise<unknown> {
       return listOrders();
     case "list_files":
       return listFiles(typeof args.folder === "string" ? args.folder : undefined);
+    case "list_venues":
+      return listVenues({ region: typeof args.region === "string" ? args.region : undefined, kind: typeof args.kind === "string" ? args.kind : undefined, status: typeof args.status === "string" ? args.status : undefined, q: typeof args.q === "string" ? args.q : undefined, hasEmail: args.has_email === true, limit: typeof args.limit === "number" ? args.limit : 200 });
+    case "get_venue": {
+      const v = await getVenue(Number(args.id));
+      if (!v) return { error: "not-found" };
+      return { ...v, contacts: await listVenueContacts(v.id), activity: await listVenueActivity(v.id) };
+    }
+    case "add_venue":
+      return upsertVenue({ name: String(args.name).slice(0, 200), city: String(args.city ?? "").slice(0, 120), kind: typeof args.kind === "string" ? args.kind : "bar", website: typeof args.website === "string" ? args.website : null, phone: String(args.phone ?? ""), email: String(args.email ?? "").toLowerCase(), capacity: typeof args.capacity === "number" ? args.capacity : null, notes: String(args.notes ?? ""), source: "agent" });
+    case "add_venue_contact":
+      await upsertVenueContact({ venue_id: Number(args.venue_id), name: String(args.name ?? ""), role: String(args.role ?? "general"), email: String(args.email ?? ""), phone: String(args.phone ?? ""), source: String(args.source ?? "agent"), verified: false });
+      return { ok: true };
+    case "set_venue_status":
+      return updateVenue(Number(args.id), { status: String(args.status) });
+    case "log_venue_activity":
+      await addVenueActivity(Number(args.id), String(args.kind ?? "note").slice(0, 20), String(args.body ?? "").slice(0, 4000), "agent");
+      return { ok: true };
+    case "venue_counts":
+      return venueCounts();
     default:
       throw new Error(`unknown tool: ${name}`);
   }

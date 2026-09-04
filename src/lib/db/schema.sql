@@ -309,3 +309,60 @@ CREATE TABLE IF NOT EXISTS files (
   created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS files_folder_idx ON files (folder, created_at DESC);
+
+-- ───────────────────────── venues (the outbound engine) ─────────────────────────
+
+CREATE TABLE IF NOT EXISTS venues (
+  id             SERIAL PRIMARY KEY,
+  name           TEXT NOT NULL,
+  slug           TEXT NOT NULL UNIQUE,
+  kind           TEXT NOT NULL DEFAULT 'bar',      -- bar|dance_hall|listening_room|restaurant|brewery|winery|festival|event_planner|corporate|private_club|other
+  city           TEXT NOT NULL DEFAULT '',
+  region         TEXT NOT NULL DEFAULT '',         -- coastal_bend|hill_country|austin|san_antonio|houston|dfw|rgv|west_texas|east_texas|panhandle|other
+  address        TEXT NOT NULL DEFAULT '',
+  website        TEXT,
+  phone          TEXT NOT NULL DEFAULT '',
+  email          TEXT NOT NULL DEFAULT '',         -- general/booking inbox if the venue publishes one
+  instagram      TEXT,
+  facebook       TEXT,
+  capacity       INT,
+  live_music     BOOLEAN NOT NULL DEFAULT true,
+  lat            DOUBLE PRECISION,
+  lng            DOUBLE PRECISION,
+  source         TEXT NOT NULL DEFAULT '',         -- osm|dance_halls|pal|manual|import
+  source_ref     TEXT,                             -- osm id / url
+  status         TEXT NOT NULL DEFAULT 'new',      -- new|researched|contacted|replied|booked|passed
+  score          INT NOT NULL DEFAULT 50,          -- 0-100 fit score
+  notes          TEXT NOT NULL DEFAULT '',
+  tags           TEXT[] NOT NULL DEFAULT '{}',
+  last_contacted_at TIMESTAMPTZ,
+  next_touch_at  DATE,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS venues_region_idx ON venues (region, status);
+CREATE INDEX IF NOT EXISTS venues_status_idx ON venues (status, next_touch_at);
+
+CREATE TABLE IF NOT EXISTS venue_contacts (
+  id         SERIAL PRIMARY KEY,
+  venue_id   INT NOT NULL REFERENCES venues(id) ON DELETE CASCADE,
+  name       TEXT NOT NULL DEFAULT '',
+  role       TEXT NOT NULL DEFAULT '',             -- booker|owner|manager|general|events
+  email      TEXT NOT NULL DEFAULT '',
+  phone      TEXT NOT NULL DEFAULT '',
+  source     TEXT NOT NULL DEFAULT '',             -- site:mailto|site:contact-page|manual
+  verified   BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (venue_id, email)
+);
+
+CREATE TABLE IF NOT EXISTS venue_activity (
+  id         SERIAL PRIMARY KEY,
+  venue_id   INT NOT NULL REFERENCES venues(id) ON DELETE CASCADE,
+  kind       TEXT NOT NULL DEFAULT 'note',         -- note|email|call|status_change|reply
+  body       TEXT NOT NULL DEFAULT '',
+  by_name    TEXT NOT NULL DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS venue_id INT REFERENCES venues(id) ON DELETE SET NULL;

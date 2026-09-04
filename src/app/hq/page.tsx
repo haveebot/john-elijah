@@ -4,6 +4,7 @@ import { listUpcomingShows } from "@/lib/db/shows";
 import { listOrders } from "@/lib/db/commerce";
 import { assetCount } from "@/lib/db/gallery";
 import { fileTotals } from "@/lib/db/files";
+import { venueCounts } from "@/lib/db/venues";
 import { query } from "@/lib/db/client";
 import { mailEnabled, mailTransportName } from "@/lib/mail";
 import { stripeEnabled } from "@/lib/stripe";
@@ -12,7 +13,7 @@ import { shippoEnabled } from "@/lib/shippo";
 export const dynamic = "force-dynamic";
 
 export default async function HqToday() {
-  const [counts, recent, upcoming, shows, orders, photos, revenue, subs, drive] = await Promise.all([
+  const [counts, recent, upcoming, shows, orders, photos, revenue, subs, drive, vc] = await Promise.all([
     bookingCounts(),
     listBookings(),
     listUpcomingBookings(6),
@@ -22,6 +23,7 @@ export default async function HqToday() {
     bookedRevenueThisYear(),
     query<{ count: string }>(`SELECT COUNT(*) AS count FROM subscribers`),
     fileTotals(),
+    venueCounts(),
   ]);
 
   const open = (counts["inquiry"] ?? 0) + (counts["quoted"] ?? 0) + (counts["hold"] ?? 0);
@@ -36,6 +38,8 @@ export default async function HqToday() {
     { label: "Booked this year", value: `$${Math.round(revenue / 100).toLocaleString()}`, href: "/hq/bookings" },
     { label: "Orders to ship", value: toShip, href: "/hq/orders" },
     { label: "On the list", value: parseInt(subs[0]?.count ?? "0", 10), href: "/hq/settings" },
+    { label: "Venues mapped", value: vc.total, href: "/hq/venues" },
+    { label: "Follow-ups due", value: vc.due, href: "/hq/venues?status=contacted" },
   ];
 
   const integrations = [
@@ -49,7 +53,7 @@ export default async function HqToday() {
       <p className="label">Today</p>
       <h1 className="wordmark mt-2 text-4xl">The band at a glance</h1>
 
-      <div className="mt-8 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
+      <div className="mt-8 grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-8">
         {tiles.map((tile) => (
           <Link key={tile.label} href={tile.href} className="rounded-lg border border-canvas-edge/60 bg-canvas-raised p-5 transition-colors hover:border-ink-faint">
             <p className="wordmark text-3xl">{tile.value}</p>

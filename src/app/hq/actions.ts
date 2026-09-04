@@ -25,6 +25,8 @@ import { updateReleaseStory, upsertBandMember, upsertPress } from "@/lib/db/musi
 import { updateAsset } from "@/lib/db/gallery";
 import { upsertVideo, toggleVideoFlag, deleteVideo } from "@/lib/db/videos";
 import { updateFile, getFile, deleteFileRow } from "@/lib/db/files";
+import { upsertVenue, updateVenue, getVenue, upsertVenueContact, deleteVenueContact, addVenueActivity, markContacted, listVenueContacts, VENUE_STATUSES, VENUE_KINDS, REGIONS } from "@/lib/db/venues";
+import { scanSiteForEmails, roleForEmail } from "@/lib/enrich";
 import { del as delBlob } from "@vercel/blob";
 import { depositUrl } from "@/lib/deposit";
 import { stripeEnabled } from "@/lib/stripe";
@@ -537,6 +539,151 @@ export async function actionDeleteFile(formData: FormData) {
   try { await delBlob(row.blob_url); } catch { /* already gone */ }
   await deleteFileRow(id);
   revalidatePath("/hq/files");
+}
+
+// ── venues (outbound) ───────────────────────────────────────────────
+
+export async function actionCreateVenue(formData: FormData) {
+  await requireOperator();
+  const name = String(formData.get("name") ?? "").trim();
+  if (!name) return;
+  const cap = Number(formData.get("capacity"));
+  const v = await upsertVenue({
+    name: name.slice(0, 200),
+    city: String(formData.get("city") ?? "").slice(0, 120),
+    kind: (VENUE_KINDS as readonly string[]).includes(String(formData.get("kind"))) ? String(formData.get("kind")) : "bar",
+    website: String(formData.get("website") ?? "").trim().slice(0, 300) || null,
+    email: String(formData.get("email") ?? "").trim().toLowerCase().slice(0, 200),
+    phone: String(formData.get("phone") ?? "").slice(0, 40),
+    capacity: Number.isFinite(cap) && cap > 0 ? Math.round(cap) : null,
+    source: "manual",
+  });
+  revalidatePath("/hq/venues");
+  redirect(`/hq/venues/${v.id}`);
+}
+
+export async function actionUpdateVenue(formData: FormData) {
+  await requireOperator();
+  const id = Number(formData.get("id"));
+  if (!Number.isInteger(id)) return;
+  const cap = Number(formData.get("capacity"));
+  const score = Number(formData.get("score"));
+  const date = String(formData.get("next_touch_at") ?? "");
+  await updateVenue(id, {
+    name: String(formData.get("name") ?? "").slice(0, 200),
+    city: String(formData.get("city") ?? "").slice(0, 120),
+    region: (REGIONS as readonly string[]).includes(String(formData.get("region"))) ? String(formData.get("region")) : "other",
+    kind: (VENUE_KINDS as readonly string[]).includes(String(formData.get("kind"))) ? String(formData.get("kind")) : "bar",
+    address: String(formData.get("address") ?? "").slice(0, 300),
+    website: String(formData.get("website") ?? "").trim().slice(0, 300) || null,
+    phone: String(formData.get("phone") ?? "").slice(0, 40),
+    email: String(formData.get("email") ?? "").trim().toLowerCase().slice(0, 200),
+    instagram: String(formData.get("instagram") ?? "").trim().slice(0, 200) || null,
+    capacity: Number.isFinite(cap) && cap > 0 ? Math.round(cap) : null,
+    score: Number.isFinite(score) ? Math.max(0, Math.min(100, Math.round(score))) : 50,
+    notes: String(formData.get("notes") ?? "").slice(0, 4000),
+    next_touch_at: /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : null,
+  });
+  revalidatePath(`/hq/venues/${id}`);
+  revalidatePath("/hq/venues");
+}
+
+export async function actionSetVenueStatus(formData: FormData) {
+  await requireOperator();
+  const id = Number(formData.get("id"));
+  const status = String(formData.get("status"));
+  if (!Number.isInteger(id) || !(VENUE_STATUSES as readonly string[]).includes(status)) return;
+  await updateVenue(id, { status });
+  revalidatePath(`/hq/venues/${id}`);
+  revalidatePath("/hq/venues");
+}
+
+export async function actionAddVenueContact(formData: FormData) {
+  const who = await requireOperator();
+  const venueId = Number(formData.get("venue_id"));
+  if (!Number.isInteger(venueId)) return;
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const name = String(formData.get("name") ?? "").trim();
+  if (!email && !name) return;
+  await upsertVenueContact({ venue_id: venueId, name: name.slice(0, 120), role: String(formData.get("role") ?? "general").slice(0, 20), email: email.slice(0, 200), phone: String(formData.get("phone") ?? "").slice(0, 40), source: `manual:${who}`, verified: true });
+  revalidatePath(`/hq/venues/${venueId}`);
+}
+
+export async function actionDeleteVenueContact(formData: FormData) {
+  await requireOperator();
+  const id = Number(formData.get("id"));
+  const venueId = Number(formData.get("venue_id"));
+  if (!Number.isInteger(id)) return;
+  await deleteVenueContact(id);
+  revalidatePath(`/hq/venues/${venueId}`);
+}
+
+export async function actionAddVenueNote(formData: FormData) {
+  const who = await requireOperator();
+  const id = Number(formData.get("id"));
+  const body = String(formData.get("body") ?? "").trim();
+  if (!Number.isInteger(id) || !body) return;
+  await addVenueActivity(id, "note", body.slice(0, 4000), who);
+  revalidatePath(`/hq/venues/${id}`);
+}
+
+export async function actionEnrichVenue(formData: FormData) {
+  const who = await requireOperator();
+  const id = Number(formData.get("id"));
+  const v = await getVenue(id);
+  if (!v?.website) return;
+  const { found, pagesTried, error } = await scanSiteForEmails(v.website);
+  for (const f of found) {
+    await upsertVenueContact({ venue_id: id, role: roleForEmail(f.email), email: f.email, source: `site:${f.kind}`, verified: false });
+  }
+  await addVenueActivity(id, "note", found.length ? `Site scan: ${found.length} address${found.length === 1 ? "" : "es"} found on ${pagesTried} pages — ${found.map((f) => f.email).join(", ")}` : `Site scan: nothing published on ${pagesTried} pages${error ? ` (${error})` : ""}.`, who);
+  if (v.status === "new") await updateVenue(id, { status: "researched" });
+  revalidatePath(`/hq/venues/${id}`);
+}
+
+export async function actionSendVenueEmail(formData: FormData) {
+  const who = await requireOperator();
+  const id = Number(formData.get("id"));
+  const to = String(formData.get("to") ?? "").trim().toLowerCase();
+  const subject = String(formData.get("subject") ?? "").trim().slice(0, 200);
+  const text = String(formData.get("text") ?? "").trim().slice(0, 8000);
+  const v = await getVenue(id);
+  if (!v || !to || !subject || !text) return;
+  const contacts = await listVenueContacts(id);
+  const allowed = contacts.some((c) => c.email === to) || v.email === to; // only addresses on file
+  if (!allowed) return;
+  const r = await sendMail({ to, subject, text, replyTo: "booking@johnelijahmusic.com" });
+  await addVenueActivity(id, "email", r.sent ? `Sent to ${to}: "${subject}"\n\n${text}` : `Send FAILED to ${to} (${r.error})`, who);
+  if (r.sent) await markContacted(id);
+  revalidatePath(`/hq/venues/${id}`);
+  revalidatePath("/hq/venues");
+}
+
+export async function actionBookingFromVenue(formData: FormData) {
+  const who = await requireOperator();
+  const id = Number(formData.get("id"));
+  const v = await getVenue(id);
+  if (!v) return;
+  const contacts = await listVenueContacts(id);
+  const c = contacts.find((x) => x.email) ?? contacts[0];
+  const date = String(formData.get("event_date") ?? "");
+  const b = await createBooking({
+    contact_name: c?.name || v.name,
+    contact_email: c?.email || v.email || "unknown@venue",
+    contact_phone: c?.phone || v.phone,
+    event_kind: v.kind === "festival" ? "festival" : "venue",
+    event_date: /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : null,
+    venue_name: v.name,
+    city: v.city,
+    configuration: v.kind === "festival" || v.kind === "dance_hall" ? "full_band" : "four_piece",
+    details: `From venue outreach (${v.kind}, ${v.region}).`,
+    source: `venue:${who}`,
+  });
+  await query(`UPDATE bookings SET venue_id = $2 WHERE id = $1`, [b.id, id]);
+  await updateVenue(id, { status: "booked" });
+  await addVenueActivity(id, "note", `Booking #${b.id} started.`, who);
+  revalidatePath("/hq/bookings");
+  redirect(`/hq/bookings/${b.id}`);
 }
 
 // ── agent tokens ────────────────────────────────────────────────────
