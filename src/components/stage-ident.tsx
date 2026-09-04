@@ -187,7 +187,11 @@ void main() {
 
   vec3 brass = vec3(0.851, 0.643, 0.255);
   vec3 col = specks + rays * uExposure * shimmer * mix(vec3(1.0), brass, 0.35);
-  gl_FragColor = vec4(col, 0.0);   // additive light only; the photo stays underneath
+  // valid premultiplied output (rgb <= alpha) so every browser composites it the same:
+  // light over the photo, brightest where the sign is, nothing where there is no light
+  vec3 c = min(col, vec3(1.0));
+  float a = max(c.r, max(c.g, c.b));
+  gl_FragColor = vec4(c, a);
 }
 `;
 
@@ -380,8 +384,25 @@ export function StageIdent({ onReady }: { onReady?: (ready: boolean) => void }) 
       // the clock starts a beat early so the first painted frame is already in motion
       startedAt = performance.now() - 350;
 
+      let frames = 0;
+      const bail = () => {
+        if (disposed) return;
+        disposed = true;
+        cancelAnimationFrame(raf);
+        setReady(false);
+        onReady?.(false);
+      };
+      // watchdog: if nothing has drawn cleanly within 2.5s of a visible tab, show the HTML wordmark
+      const watchdog = window.setInterval(() => {
+        if (disposed) { window.clearInterval(watchdog); return; }
+        if (document.visibilityState !== "visible") return;
+        if (frames < 5 || gl.getError() !== 0) { window.clearInterval(watchdog); bail(); }
+        else window.clearInterval(watchdog);
+      }, 2500);
+
       const frame = () => {
         if (disposed) return;
+        try {
         const t = (performance.now() - startedAt) / 1000;
         // JS burst envelope: letters lock ~2.3s → flare → settle
         const burst = Math.max(0, Math.sin(Math.min(Math.max(t - 2.2, 0) / 1.4, 1) * Math.PI)) * (t < 3.8 ? 1 : 0.1 + 0.08 * Math.sin(t * 0.35));
@@ -429,7 +450,7 @@ export function StageIdent({ onReady }: { onReady?: (ready: boolean) => void }) 
         gl.viewport(0, 0, canvas.width, canvas.height);
         gl.clearColor(0, 0, 0, 0);
         gl.clear(gl.COLOR_BUFFER_BIT);
-        gl.blendFuncSeparate(gl.ONE, gl.ONE, gl.ZERO, gl.ONE);
+        gl.disable(gl.BLEND);
         gl.useProgram(comp);
         gl.bindBuffer(gl.ARRAY_BUFFER, quad);
         gl.enableVertexAttribArray(aPos);
@@ -445,11 +466,14 @@ export function StageIdent({ onReady }: { onReady?: (ready: boolean) => void }) 
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
         gl.disableVertexAttribArray(aPos);
 
+        frames += 1;
         dbg.t = t;
         dbg.exposure = exposure;
-        dbg.frames = ((dbg.frames as number) || 0) + 1;
-        dbg.glError = gl.getError();
+        dbg.frames = frames;
         raf = requestAnimationFrame(frame);
+        } catch {
+          bail();
+        }
       };
       raf = requestAnimationFrame(frame);
     };
