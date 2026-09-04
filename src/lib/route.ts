@@ -42,7 +42,7 @@ export function milesBetween(a: [number, number], b: [number, number]): number {
 
 export type Stop = { night: number; city: string; venue: Venue; alternates: Venue[]; miles: number; hours: number };
 
-export function planRoute(input: { venues: Venue[]; start: [number, number]; nights: number; maxDailyMiles: number; minScore: number }): { stops: Stop[]; homeMiles: number; totalMiles: number } {
+export function planRoute(input: { venues: Venue[]; start: [number, number]; startCity?: string; nights: number; maxDailyMiles: number; minScore: number }): { stops: Stop[]; homeMiles: number; totalMiles: number } {
   // group by city; best venue per city by score (email on file wins ties)
   const byCity = new Map<string, Venue[]>();
   for (const v of input.venues) {
@@ -57,7 +57,7 @@ export function planRoute(input: { venues: Venue[]; start: [number, number]; nig
   const stops: Stop[] = [];
   let here = input.start;
   let total = 0;
-  const used = new Set<string>();
+  const used = new Set<string>(input.startCity ? [input.startCity.toLowerCase()] : []);
   for (let night = 1; night <= input.nights; night++) {
     let best: { c: (typeof cities)[number]; miles: number; value: number } | null = null;
     for (const c of cities) {

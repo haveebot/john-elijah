@@ -16,7 +16,7 @@ export default async function RoutePlanner({ searchParams }: { searchParams: Pro
 
   const all = await listVenues({ limit: 5000 });
   const pool = regions.length ? all.filter((v) => regions.includes(v.region)) : all;
-  const plan = planRoute({ venues: pool, start, nights, maxDailyMiles: maxDaily, minScore });
+  const plan = planRoute({ venues: pool, start, startCity: startKey, nights, maxDailyMiles: maxDaily, minScore });
 
   return (
     <div>
