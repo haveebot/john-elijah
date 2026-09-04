@@ -85,7 +85,7 @@ export function BookingForm({
       <div className="rounded-lg border border-brass/40 bg-canvas-raised p-8">
         <p className="script text-3xl text-brass">Got it.</p>
         <p className="mt-2 text-ink-dim">
-          The date&apos;s in the book as an inquiry. You&apos;ll hear back with a quote and a hold —
+          The date&apos;s in the book as an inquiry. You&apos;ll hear back with a quote and a hold , 
           usually within a day.
         </p>
       </div>
@@ -223,7 +223,7 @@ export function BookingForm({
         <button type="submit" disabled={state === "busy"} className="btn btn-brass disabled:opacity-50">
           {state === "busy" ? "Sending…" : "Send the inquiry"}
         </button>
-        {state === "error" ? <p className="text-sm text-coral">Something slipped — try again.</p> : null}
+        {state === "error" ? <p className="text-sm text-coral">Something slipped, try again.</p> : null}
       </div>
     </form>
   );

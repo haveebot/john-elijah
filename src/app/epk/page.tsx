@@ -9,11 +9,12 @@ import { listBandMembers, listPress, listReleases } from "@/lib/db/music";
 import { listFeaturedAssets, getHeroAsset } from "@/lib/db/gallery";
 import { listFeaturedVideos } from "@/lib/db/videos";
 import { listUpcomingShows } from "@/lib/db/shows";
+import { PrintButton } from "./print-button";
 
 export const revalidate = 3600;
 export const metadata = {
   title: "Electronic press kit",
-  description: `${SITE.bandName} — EPK: bio, photos, stage plots, tech rider, music, video, and booking for talent buyers.`,
+  description: `${SITE.bandName}, EPK: bio, photos, stage plots, tech rider, music, video, and booking for talent buyers.`,
 };
 
 export default async function EpkPage() {
@@ -43,6 +44,7 @@ export default async function EpkPage() {
             <div className="mt-4 flex flex-wrap items-center gap-3">
               <LoneStarBadge />
               <span className="label">{SITE.origin} · books {SITE.bookingRadius.toLowerCase()}</span>
+              <PrintButton />
             </div>
           </div>
           {hero ? (
@@ -75,15 +77,15 @@ export default async function EpkPage() {
             <p className="label mt-1">{lead?.instrument} · {lead?.hometown}</p>
             <ul className="mt-4 space-y-1 text-sm text-ink-dim">
               {members.slice(1).map((m) => (
-                <li key={m.id}><span className="text-ink">{m.name}</span> — {m.instrument}</li>
+                <li key={m.id}><span className="text-ink">{m.name}</span>, {m.instrument}</li>
               ))}
             </ul>
           </div>
           <div className="space-y-4 leading-relaxed text-ink-dim">
             {(lead?.bio ?? "").split("\n\n").map((p, i) => <p key={i}>{p}</p>)}
             <blockquote className="border-l-2 border-brass/60 pl-4 text-sm italic">
-              “No joke, this is easily one of the best bands I&apos;ve ever gotten to play with. Blues, soul, R&amp;B, rock, reggae — deep grooves and tons of original music, with an improvisational depth that&apos;s really exciting.”
-              <span className="label mt-1 block not-italic">— Kris Redus, producer / studio drummer</span>
+              “No joke, this is easily one of the best bands I&apos;ve ever gotten to play with. Blues, soul, R&amp;B, rock, reggae, deep grooves and tons of original music, with an improvisational depth that&apos;s really exciting.”
+              <span className="label mt-1 block not-italic">,  Kris Redus, producer / studio drummer</span>
             </blockquote>
           </div>
         </section>
@@ -175,7 +177,7 @@ export default async function EpkPage() {
               {shows.map((s) => (
                 <li key={s.id} className="px-4 py-2.5">{s.date} · <span className="text-ink">{s.venue_name}</span>{s.city ? ` · ${s.city}` : ""}</li>
               ))}
-              {shows.length === 0 ? <li className="px-4 py-2.5 text-ink-faint">Dates posting — <Link href="/shows" className="brass-link text-ink">calendar</Link>.</li> : null}
+              {shows.length === 0 ? <li className="px-4 py-2.5 text-ink-faint">Dates posting, <Link href="/shows" className="brass-link text-ink">calendar</Link>.</li> : null}
             </ul>
           </div>
           <div>

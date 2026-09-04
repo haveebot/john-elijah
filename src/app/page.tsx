@@ -13,7 +13,7 @@ import { listLiveProducts } from "@/lib/db/commerce";
 import { listFeaturedVideos } from "@/lib/db/videos";
 import { VideoEmbed } from "@/components/video-embed";
 
-export const revalidate = 3600; // static, refreshed hourly — no per-request DB
+export const revalidate = 3600; // static, refreshed hourly, no per-request DB
 
 export default async function HomePage() {
   const [shows, residencies, releases, hero, featured, configs, products, videos] = await Promise.all([
@@ -33,10 +33,10 @@ export default async function HomePage() {
       <div className="stage-hairline" aria-hidden />
       <SiteNav />
       <main>
-        {/* ── Act I: the stage — photo + the Stage Light ident ── */}
+        {/* ── Act I: the stage, photo + the Stage Light ident ── */}
         <Hero photo={hero ? { url: hero.blob_url, alt: hero.alt || `${SITE.name} on stage` } : null} />
 
-        {/* ── Shows — the setlist strip ── */}
+        {/* ── Shows, the setlist strip ── */}
         <section className="mx-auto max-w-6xl px-5 py-20">
           <div className="mb-8 flex items-end justify-between gap-4">
             <div>
@@ -68,7 +68,7 @@ export default async function HomePage() {
                 {release.cover_asset_url || release.cover_url ? (
                   <Image
                     src={release.cover_asset_url || (release.cover_url as string)}
-                    alt={`${release.title} — album cover`}
+                    alt={`${release.title}, album cover`}
                     fill
                     sizes="(max-width: 768px) 90vw, 40vw"
                     className="object-cover"
@@ -125,7 +125,7 @@ export default async function HomePage() {
           </section>
         ) : null}
 
-        {/* ── Photos — edge to edge ── */}
+        {/* ── Photos, edge to edge ── */}
         {featured.length > 0 ? (
           <section className="py-16">
             <div className="mx-auto mb-8 flex max-w-6xl items-end justify-between gap-4 px-5">
@@ -154,7 +154,7 @@ export default async function HomePage() {
           </section>
         ) : null}
 
-        {/* ── Booking — the configurations ── */}
+        {/* ── Booking, the configurations ── */}
         <section className="mx-auto max-w-6xl px-5 py-20">
           <p className="label mb-2">Booking · {SITE.bookingRadius}</p>
           <h2 className="wordmark text-3xl md:text-5xl">

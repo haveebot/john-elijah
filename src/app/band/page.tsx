@@ -43,14 +43,14 @@ export default async function BandPage() {
             </div>
             <div className="space-y-4 leading-relaxed text-ink-dim">
               <p className="text-ink">
-                Hard to put a genre on it. Blues, rock, soul, jazz, R&amp;B and Americana all pass through, and it always comes out sounding like him — smooth, greasy, beautiful. A rough-but-soothing voice, a guitar that raises hair, and the coastal ease of Port Aransas carried into every room. Never the same song twice.
+                Hard to put a genre on it. Blues, rock, soul, jazz, R&amp;B and Americana all pass through, and it always comes out sounding like him, smooth, greasy, beautiful. A rough-but-soothing voice, a guitar that raises hair, and the coastal ease of Port Aransas carried into every room. Never the same song twice.
               </p>
               {lead.bio.split("\n\n").map((para, i) => (
                 <p key={i}>{para}</p>
               ))}
               <blockquote className="border-l-2 border-brass/60 pl-4 text-sm italic">
-                “No joke, this is easily one of the best bands I&apos;ve ever gotten to play with. Deep, deep grooves and tons of original music — all with an improvisational depth that&apos;s really exciting. We never know where a song might end up going.”
-                <span className="label mt-1 block not-italic">— Kris Redus, producer / studio drummer</span>
+                “No joke, this is easily one of the best bands I&apos;ve ever gotten to play with. Deep, deep grooves and tons of original music, all with an improvisational depth that&apos;s really exciting. We never know where a song might end up going.”
+                <span className="label mt-1 block not-italic">,  Kris Redus, producer / studio drummer</span>
               </blockquote>
             </div>
           </section>
@@ -60,7 +60,7 @@ export default async function BandPage() {
           <div>
             <p className="script text-3xl text-brass">{SITE.affiliation}</p>
             <p className="mt-2 max-w-xl text-sm leading-relaxed text-ink-dim">
-              John Elijah is part of Lone Star Beer&apos;s artist roster — the National Beer of Texas backing
+              John Elijah is part of Lone Star Beer&apos;s artist roster, the National Beer of Texas backing
               Texas music. Venues, festivals, and brands looking for a Lone Star night: that&apos;s this band.
             </p>
           </div>

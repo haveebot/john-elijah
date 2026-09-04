@@ -10,15 +10,18 @@ const EMAIL_RE = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
 const JUNK = /(sentry|wixpress|example\.com|domain\.com|yourdomain|email\.com|\.png$|\.jpg$|\.gif$|\.svg$|\.webp$|noreply|no-reply|godaddy|squarespace|wordpress|shopify|cloudflare|w3\.org|schema\.org)/i;
 
 export type FoundEmail = { email: string; page: string; kind: "mailto" | "text" };
+export type FoundPhone = { phone: string; page: string };
+const PHONE_RE = /(?:\+?1[\s.-]?)?\(?([2-9]\d{2})\)?[\s.-]?(\d{3})[\s.-]?(\d{4})\b/g;
 
-export async function scanSiteForEmails(website: string, maxPages = PATHS.length): Promise<{ found: FoundEmail[]; pagesTried: number; error?: string }> {
+export async function scanSiteForEmails(website: string, maxPages = PATHS.length): Promise<{ found: FoundEmail[]; phones: FoundPhone[]; pagesTried: number; error?: string }> {
   let base: URL;
   try {
     base = new URL(website.startsWith("http") ? website : `https://${website}`);
   } catch {
-    return { found: [], pagesTried: 0, error: "bad-url" };
+    return { found: [], phones: [], pagesTried: 0, error: "bad-url" };
   }
   const found = new Map<string, FoundEmail>();
+  const phones = new Map<string, FoundPhone>();
   let tried = 0;
   for (const p of PATHS.slice(0, maxPages)) {
     const url = new URL(p || "/", base).toString();
@@ -43,12 +46,23 @@ export async function scanSiteForEmails(website: string, maxPages = PATHS.length
         const e = m[0].toLowerCase();
         if (!JUNK.test(e) && !found.has(e)) found.set(e, { email: e, page: url, kind: "text" });
       }
+      for (const m of html.matchAll(/href="tel:([^"]+)"/gi)) {
+        const digits = m[1].replace(/\D/g, "").replace(/^1(\d{10})$/, "$1");
+        if (digits.length === 10 && !phones.has(digits)) phones.set(digits, { phone: `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`, page: url });
+      }
+      if (phones.size === 0) {
+        for (const m of text.matchAll(PHONE_RE)) {
+          const digits = `${m[1]}${m[2]}${m[3]}`;
+          if (!phones.has(digits)) phones.set(digits, { phone: `${m[1]}-${m[2]}-${m[3]}`, page: url });
+          if (phones.size >= 3) break;
+        }
+      }
       if (found.size >= 6) break;
     } catch {
       /* unreachable page — move on */
     }
   }
-  return { found: Array.from(found.values()), pagesTried: tried };
+  return { found: Array.from(found.values()), phones: Array.from(phones.values()), pagesTried: tried };
 }
 
 export function roleForEmail(email: string): string {

@@ -89,8 +89,8 @@ export async function POST(request: Request) {
   // confirmation to the inquirer
   const confirm = await sendMail({
     to: booking.contact_email,
-    subject: `Got your booking inquiry — ${SITE.bandName}`,
-    text: `Hi ${booking.contact_name},\n\nGot it. ${label} · ${when} · ${where}.${estimate ? ` The working number you saw was about $${Math.round(estimate / 100)}.` : ""}\n\nYou'll hear back with the firm quote and a hold on the date, usually within a day.\n\n— ${SITE.bandName}\n${SITE.domain}`,
+    subject: `Got your booking inquiry, ${SITE.bandName}`,
+    text: `Hi ${booking.contact_name},\n\nGot it. ${label} · ${when} · ${where}.${estimate ? ` The working number you saw was about $${Math.round(estimate / 100)}.` : ""}\n\nYou'll hear back with the firm quote and a hold on the date, usually within a day.\n\n,  ${SITE.bandName}\n${SITE.domain}`,
   });
   // alert to the band
   const notify = notifyEmail();
@@ -99,7 +99,7 @@ export async function POST(request: Request) {
         to: notify,
         replyTo: booking.contact_email,
         subject: `New booking inquiry: ${label} · ${when} · ${where}`,
-        text: `${booking.contact_name} <${booking.contact_email}>${booking.contact_phone ? ` · ${booking.contact_phone}` : ""}\n\nKind: ${eventKind}\nWhen: ${when}${booking.hours ? ` · ${booking.hours}h` : ""}\nWhere: ${where}\nLineup: ${label}\nCrowd: ${booking.guests ?? "—"}\nBudget: ${booking.budget_cents ? `$${booking.budget_cents / 100}` : "—"}\nSite estimate: ${estimate ? `$${Math.round(estimate / 100)}` : "—"}\n\n${booking.details || "(no details)"}\n\nHQ: ${SITE.domain}/hq/bookings/${booking.id}`,
+        text: `${booking.contact_name} <${booking.contact_email}>${booking.contact_phone ? ` · ${booking.contact_phone}` : ""}\n\nKind: ${eventKind}\nWhen: ${when}${booking.hours ? ` · ${booking.hours}h` : ""}\nWhere: ${where}\nLineup: ${label}\nCrowd: ${booking.guests ?? ", "}\nBudget: ${booking.budget_cents ? `$${booking.budget_cents / 100}` : ", "}\nSite estimate: ${estimate ? `$${Math.round(estimate / 100)}` : ", "}\n\n${booking.details || "(no details)"}\n\nHQ: ${SITE.domain}/hq/bookings/${booking.id}`,
       })
     : { sent: false, error: "no-notify-address" };
 

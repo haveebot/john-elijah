@@ -51,7 +51,7 @@ export function Hero({ photo }: { photo: { url: string; alt: string } | null }) 
         </h1>
         <LoneStarBadge size="lg" className="mt-5" />
         <p className="mt-4 max-w-xl text-lg leading-relaxed text-ink-dim">
-          Originals rooted in blues and soul, out of {SITE.origin}. Full band to solo acoustic — anywhere in Texas.
+          Originals rooted in blues and soul, out of {SITE.origin}. Full band to solo acoustic, anywhere in Texas.
         </p>
         <div className="mt-8 flex flex-wrap items-center gap-4">
           <Link href="/book" className="btn btn-brass">Book the band</Link>

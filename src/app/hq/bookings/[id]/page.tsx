@@ -84,16 +84,16 @@ export default async function BookingDetail({ params }: { params: Promise<{ id: 
             <label className="text-xs text-ink-faint">City<input name="city" defaultValue={booking.city} className="field mt-1" /></label>
             <label className="text-xs text-ink-faint col-span-2">Lineup
               <select name="configuration" defaultValue={booking.configuration ?? ""} className="field mt-1">
-                <option value="">—</option>
-                {configs.map((c) => <option key={c.key} value={c.key}>{c.label} — ${(c.base_cents / 100).toFixed(0)}</option>)}
+                <option value="">, </option>
+                {configs.map((c) => <option key={c.key} value={c.key}>{c.label}, ${(c.base_cents / 100).toFixed(0)}</option>)}
               </select>
             </label>
           </div>
           <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
-            <div><dt className="label">Crowd</dt><dd className="mt-1 text-ink-dim">{booking.guests ?? "—"}</dd></div>
-            <div><dt className="label">Their budget</dt><dd className="mt-1 text-ink-dim">{booking.budget_cents ? `$${(booking.budget_cents / 100).toFixed(0)}` : "—"}</dd></div>
-            <div><dt className="label">Site estimate shown</dt><dd className="mt-1 text-ink-dim">{booking.estimate_cents ? dollars(booking.estimate_cents) : "—"}</dd></div>
-            <div><dt className="label">Travel</dt><dd className="mt-1 text-ink-dim">{band ? band.label : "—"}</dd></div>
+            <div><dt className="label">Crowd</dt><dd className="mt-1 text-ink-dim">{booking.guests ?? ", "}</dd></div>
+            <div><dt className="label">Their budget</dt><dd className="mt-1 text-ink-dim">{booking.budget_cents ? `$${(booking.budget_cents / 100).toFixed(0)}` : ", "}</dd></div>
+            <div><dt className="label">Site estimate shown</dt><dd className="mt-1 text-ink-dim">{booking.estimate_cents ? dollars(booking.estimate_cents) : ", "}</dd></div>
+            <div><dt className="label">Travel</dt><dd className="mt-1 text-ink-dim">{band ? band.label : ", "}</dd></div>
           </dl>
           <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-ink-dim">{booking.details || "No details given."}</p>
           <button type="submit" className="btn btn-ghost btn-sm mt-4">Save the night</button>
@@ -121,7 +121,7 @@ export default async function BookingDetail({ params }: { params: Promise<{ id: 
             <p className="label mb-2">Travel band</p>
             <div className="flex gap-2">
               <select name="travel_band" defaultValue={booking.travel_band ?? ""} className="field">
-                <option value="">—</option>
+                <option value="">, </option>
                 {bands.map((b) => <option key={b.key} value={b.key}>{b.label} (+${(b.fee_cents / 100).toFixed(0)})</option>)}
               </select>
               <button type="submit" className="btn btn-ghost btn-sm whitespace-nowrap">Set</button>
@@ -136,7 +136,7 @@ export default async function BookingDetail({ params }: { params: Promise<{ id: 
               ) : stripeEnabled() ? (
                 <p className="break-all text-xs text-ink-dim">{depositUrl(booking.id)}<span className="label mt-2 block">Included automatically in the quote email.</span></p>
               ) : (
-                <p className="text-xs text-ink-faint">Stripe isn&apos;t connected — the link switches on with the keys. Signed per booking; safe to send once live.</p>
+                <p className="text-xs text-ink-faint">Stripe isn&apos;t connected, the link switches on with the keys. Signed per booking; safe to send once live.</p>
               )}
             </div>
           ) : null}
@@ -147,14 +147,14 @@ export default async function BookingDetail({ params }: { params: Promise<{ id: 
             <p className="text-xs text-ink-faint">
               {mailEnabled()
                 ? `Emails ${booking.contact_email} the quote, deposit, and date hold; logs it here.`
-                : "Mail isn't connected yet — this opens a pre-written email in your mail app instead."}
+                : "Mail isn't connected yet, this opens a pre-written email in your mail app instead."}
             </p>
             {mailEnabled() ? (
               <button type="submit" disabled={!booking.quote_cents} className="btn btn-ghost btn-sm mt-3 disabled:opacity-40">Email quote</button>
             ) : (
               <a
                 className="btn btn-ghost btn-sm mt-3"
-                href={`mailto:${booking.contact_email}?subject=${encodeURIComponent(`John Elijah Band — ${booking.event_date ?? "your date"}`)}&body=${encodeURIComponent(quoteBody(booking.contact_name, config?.label ?? "the band", booking.event_date, booking.venue_name, booking.quote_cents, booking.deposit_cents))}`}
+                href={`mailto:${booking.contact_email}?subject=${encodeURIComponent(`John Elijah Band, ${booking.event_date ?? "your date"}`)}&body=${encodeURIComponent(quoteBody(booking.contact_name, config?.label ?? "the band", booking.event_date, booking.venue_name, booking.quote_cents, booking.deposit_cents))}`}
               >
                 Draft in mail app
               </a>
@@ -219,7 +219,7 @@ function quoteBody(
     ``,
     `Say the word and we'll hold it.`,
     ``,
-    `— John Elijah Band`,
+    `,  John Elijah Band`,
   ];
   return lines.join("\n");
 }

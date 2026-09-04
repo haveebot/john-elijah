@@ -91,7 +91,7 @@ export function BuyPanel({
           {state === "busy" ? "Heading to checkout…" : "Buy it"}
         </button>
         {state === "error" ? (
-          <p className="mt-3 text-sm text-coral">Checkout hiccuped — try again.</p>
+          <p className="mt-3 text-sm text-coral">Checkout hiccuped, try again.</p>
         ) : null}
       </div>
     );
@@ -104,7 +104,7 @@ export function BuyPanel({
   return (
     <div className="mt-8 rounded-lg border border-canvas-edge/60 bg-canvas-raised p-5">
       <p className="wordmark text-xl">
-        {status === "sold_out" ? "Sold out — for now." : "Not on sale right this second."}
+        {status === "sold_out" ? "Sold out, for now." : "Not on sale right this second."}
       </p>
       <p className="mt-1 text-sm text-ink-dim">
         Leave an email and get first word when it's back.
@@ -127,7 +127,7 @@ export function BuyPanel({
         </button>
       </form>
       {state === "error" ? (
-        <p className="mt-3 text-sm text-coral">Something hiccuped — try again.</p>
+        <p className="mt-3 text-sm text-coral">Something hiccuped, try again.</p>
       ) : null}
     </div>
   );

@@ -30,7 +30,7 @@ const CORE = ["27.3,-98.2,28.5,-96.5", "29.2,-99.2,30.2,-97.8", "29.9,-99.6,30.7
 
 async function overpass(q: string): Promise<{ tags: Record<string, string>; id: number; type: string; lat?: number; lon?: number; center?: { lat: number; lon: number } }[]> {
   const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(q)}`;
-  const res = await fetch(url, { headers: { Accept: "application/json" } });
+  const res = await fetch(url, { headers: { Accept: "application/json", "User-Agent": UA } });
   if (!res.ok) throw new Error(`overpass ${res.status}`);
   const j = (await res.json()) as { elements: never[] };
   return j.elements as never[];
@@ -224,13 +224,14 @@ async function enrich(max: number): Promise<void> {
   const rows = await query<{ id: number; name: string; website: string }>(
     `SELECT v.id, v.name, v.website FROM venues v
      WHERE v.website IS NOT NULL AND v.email = '' AND NOT EXISTS (SELECT 1 FROM venue_contacts c WHERE c.venue_id = v.id)
-       AND NOT EXISTS (SELECT 1 FROM venue_activity a WHERE a.venue_id = v.id AND a.kind = 'note' AND a.body LIKE 'Site scan:%')
+       AND NOT EXISTS (SELECT 1 FROM venue_activity a WHERE a.venue_id = v.id AND a.kind = 'note' AND a.body LIKE 'Site scan%')
      ORDER BY v.score DESC, v.id LIMIT $1`, [max]);
   let hits = 0;
   for (const v of rows) {
-    const { found, pagesTried } = await scanSiteForEmails(v.website, 6);
+    const { found, phones, pagesTried } = await scanSiteForEmails(v.website, 6);
     for (const f of found) await upsertVenueContact({ venue_id: v.id, role: roleForEmail(f.email), email: f.email, source: `site:${f.kind}`, verified: false });
-    await addVenueActivity(v.id, "note", found.length ? `Site scan: ${found.length} address${found.length === 1 ? "" : "es"} on ${pagesTried} pages — ${found.map((f) => f.email).join(", ")}` : `Site scan: nothing published on ${pagesTried} pages.`, "scraper");
+    if (phones[0]) await query(`UPDATE venues SET phone = $2 WHERE id = $1 AND phone = ''`, [v.id, phones[0].phone]);
+    await addVenueActivity(v.id, "note", `Site scan (${pagesTried} pages): ${found.length ? `${found.length} email(s): ${found.map((f) => f.email).join(", ")}` : "no email published"} · ${phones.length ? `phone: ${phones[0].phone}` : "no phone found"}.`, "scraper");
     if (found.length) { hits += 1; await updateVenue(v.id, { status: "researched" }); }
     console.log(`  ${found.length ? "✓" : "·"} ${v.name}: ${found.map((f) => f.email).join(", ") || "none"}`);
   }

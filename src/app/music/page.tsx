@@ -29,7 +29,7 @@ export default async function MusicPage() {
               {r.cover_asset_url || r.cover_url ? (
                 <Image
                   src={r.cover_asset_url || (r.cover_url as string)}
-                  alt={`${r.title} — cover`}
+                  alt={`${r.title}, cover`}
                   fill
                   sizes="(max-width: 768px) 90vw, 380px"
                   className="object-cover"
@@ -88,7 +88,7 @@ export default async function MusicPage() {
                 <VideoEmbed key={v.id} youtubeId={v.youtube_id} title={v.title} priority={i < 3} />
               ))}
             </div>
-            <a href="https://www.youtube.com/@JohnElijahMusic" target="_blank" rel="noopener noreferrer" className="brass-link mt-4 inline-block text-sm text-ink-dim hover:text-ink">More on YouTube — @JohnElijahMusic →</a>
+            <a href="https://www.youtube.com/@JohnElijahMusic" target="_blank" rel="noopener noreferrer" className="brass-link mt-4 inline-block text-sm text-ink-dim hover:text-ink">More on YouTube, @JohnElijahMusic →</a>
           </section>
         ) : null}
 

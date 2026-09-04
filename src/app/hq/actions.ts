@@ -174,14 +174,14 @@ export async function actionSendQuoteEmail(formData: FormData) {
     ``,
     `Say the word and we'll hold it.`,
     ``,
-    `— ${SITE.bandName}`,
+    `,  ${SITE.bandName}`,
     SITE.domain,
   ]
     .filter((l) => l !== null)
     .join("\n");
   const result = await sendMail({
     to: booking.contact_email,
-    subject: `${SITE.bandName} — ${booking.event_date ?? "your date"}`,
+    subject: `${SITE.bandName}, ${booking.event_date ?? "your date"}`,
     text,
   });
   await addBookingEvent(id, "email", result.sent ? `Quote emailed to ${booking.contact_email}.` : `Quote email NOT sent (${result.error}).`);
@@ -632,11 +632,13 @@ export async function actionEnrichVenue(formData: FormData) {
   const id = Number(formData.get("id"));
   const v = await getVenue(id);
   if (!v?.website) return;
-  const { found, pagesTried, error } = await scanSiteForEmails(v.website);
+  const { found, phones, pagesTried, error } = await scanSiteForEmails(v.website);
   for (const f of found) {
     await upsertVenueContact({ venue_id: id, role: roleForEmail(f.email), email: f.email, source: `site:${f.kind}`, verified: false });
   }
-  await addVenueActivity(id, "note", found.length ? `Site scan: ${found.length} address${found.length === 1 ? "" : "es"} found on ${pagesTried} pages — ${found.map((f) => f.email).join(", ")}` : `Site scan: nothing published on ${pagesTried} pages${error ? ` (${error})` : ""}.`, who);
+  if (!v.phone && phones[0]) await updateVenue(id, { phone: phones[0].phone });
+  const summary = [found.length ? `${found.length} email${found.length === 1 ? "" : "s"}: ${found.map((f) => f.email).join(", ")}` : "no email published", phones.length ? `phone: ${phones.map((p) => p.phone).join(", ")}` : "no phone found"].join(" · ");
+  await addVenueActivity(id, "note", `Site scan (${pagesTried} pages): ${summary}${error ? ` (${error})` : ""}.`, who);
   if (v.status === "new") await updateVenue(id, { status: "researched" });
   revalidatePath(`/hq/venues/${id}`);
 }

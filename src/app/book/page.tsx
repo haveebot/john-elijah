@@ -7,10 +7,10 @@ export const revalidate = 3600;
 export const metadata = { title: "Book the band" };
 
 const DEPOSIT_NOTES: Record<string, string> = {
-  paid: "Deposit received — the date is held. You'll get a confirmation from the band.",
+  paid: "Deposit received, the date is held. You'll get a confirmation from the band.",
   already: "That deposit was already paid. The date is held.",
   cancelled: "No charge was made. The quote stands whenever you're ready.",
-  offline: "Online deposits aren't switched on yet — reply to the quote email and we'll sort it directly.",
+  offline: "Online deposits aren't switched on yet, reply to the quote email and we'll sort it directly.",
   invalid: "That deposit link isn't valid. Reply to the quote email and we'll send a fresh one.",
 };
 
@@ -37,7 +37,7 @@ export default async function BookPage({
         ) : null}
         <div className="-mt-4 mb-10 max-w-2xl space-y-3 leading-relaxed text-ink-dim">
           <p>
-            Tell us the night — where, when, how big the room is — and you&apos;ll see a working
+            Tell us the night, where, when, how big the room is, and you&apos;ll see a working
             number right here before you send. We come back with the firm quote and a hold on
             the date, usually within a day. Solo acoustic through the full five-piece; bars,
             private parties, weddings, festivals, corporate nights. Anywhere in Texas.
