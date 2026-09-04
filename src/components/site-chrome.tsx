@@ -72,7 +72,7 @@ export function SiteFooter() {
             Press kit (EPK)
           </Link>
           <a href={SITE.photographer.url} target="_blank" rel="noopener noreferrer" className="brass-link hover:text-ink">
-            Photography — {SITE.photographer.name}
+            Photography — {SITE.photographer.name} · {SITE.photographer.company}
           </a>
           <p className="text-ink-faint">© {new Date().getFullYear()} {SITE.bandName}</p>
         </div>

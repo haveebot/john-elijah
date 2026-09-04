@@ -24,6 +24,8 @@ import { upsertShow, setShowStatus, toggleShowPublic, deleteShow, upsertResidenc
 import { updateReleaseStory, upsertBandMember, upsertPress } from "@/lib/db/music";
 import { updateAsset } from "@/lib/db/gallery";
 import { upsertVideo, toggleVideoFlag, deleteVideo } from "@/lib/db/videos";
+import { updateFile, getFile, deleteFileRow } from "@/lib/db/files";
+import { del as delBlob } from "@vercel/blob";
 import { depositUrl } from "@/lib/deposit";
 import { stripeEnabled } from "@/lib/stripe";
 import { query } from "@/lib/db/client";
@@ -512,6 +514,29 @@ export async function actionBuyLabel(formData: FormData) {
   });
   revalidatePath("/hq/orders");
   redirect("/hq/orders");
+}
+
+// ── files ───────────────────────────────────────────────────────────
+
+export async function actionUpdateFile(formData: FormData) {
+  await requireOperator();
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+  await updateFile(id, {
+    folder: String(formData.get("folder") ?? ""),
+    notes: String(formData.get("notes") ?? "").slice(0, 2000),
+  });
+  revalidatePath("/hq/files");
+}
+
+export async function actionDeleteFile(formData: FormData) {
+  await requireOperator();
+  const id = String(formData.get("id") ?? "");
+  const row = await getFile(id);
+  if (!row) return;
+  try { await delBlob(row.blob_url); } catch { /* already gone */ }
+  await deleteFileRow(id);
+  revalidatePath("/hq/files");
 }
 
 // ── agent tokens ────────────────────────────────────────────────────

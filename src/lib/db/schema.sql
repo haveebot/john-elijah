@@ -291,3 +291,21 @@ ALTER TABLE bookings ADD COLUMN IF NOT EXISTS travel_band    TEXT REFERENCES tra
 ALTER TABLE bookings ADD COLUMN IF NOT EXISTS estimate_cents INT;
 ALTER TABLE bookings ADD COLUMN IF NOT EXISTS deposit_paid_at TIMESTAMPTZ;
 ALTER TABLE bookings ADD COLUMN IF NOT EXISTS deposit_session_id TEXT;
+
+-- ───────────────────────── files (the shared drive: music, video, designs, docs) ─────────────────────────
+
+CREATE TABLE IF NOT EXISTS files (
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  pathname     TEXT NOT NULL UNIQUE,            -- blob pathname (folder/filename)
+  blob_url     TEXT NOT NULL,
+  filename     TEXT NOT NULL,
+  size_bytes   BIGINT NOT NULL DEFAULT 0,
+  content_type TEXT NOT NULL DEFAULT '',
+  kind         TEXT NOT NULL DEFAULT 'other',   -- audio|video|image|design|doc|other
+  folder       TEXT NOT NULL DEFAULT 'inbox',   -- music|video|photos|designs|docs|inbox
+  uploaded_by  TEXT NOT NULL DEFAULT '',
+  notes        TEXT NOT NULL DEFAULT '',
+  tags         TEXT[] NOT NULL DEFAULT '{}',
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS files_folder_idx ON files (folder, created_at DESC);

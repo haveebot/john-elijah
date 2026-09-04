@@ -8,6 +8,7 @@ const HQ_NAV = [
   { href: "/hq/shows", label: "Shows" },
   { href: "/hq/music", label: "Music" },
   { href: "/hq/photos", label: "Photos" },
+  { href: "/hq/files", label: "Files" },
   { href: "/hq/products", label: "Merch" },
   { href: "/hq/orders", label: "Orders" },
   { href: "/hq/settings", label: "Settings" },

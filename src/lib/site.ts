@@ -20,5 +20,5 @@ export const SITE = {
   affiliation: "Official Lone Star Beer artist",
   affiliationShort: "Lone Star Beer artist",
   affiliationUrl: "https://lonestarbeer.com/",
-  photographer: { name: "Jacob Vachon", url: "https://www.vachonmedia.com/" },
+  photographer: { name: "Jacob Vachon", company: "Jacob Vachon Media", url: "https://www.vachonmedia.com/" },
 } as const;

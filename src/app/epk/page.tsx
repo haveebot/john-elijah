@@ -123,7 +123,7 @@ export default async function EpkPage() {
         {/* photos */}
         <section className="mt-12">
           <div className="flex items-end justify-between gap-4">
-            <p className="label">Approved photos · full-size downloads · credit {SITE.photographer.name}</p>
+            <p className="label">Approved photos · full-size downloads · credit {SITE.photographer.name} · {SITE.photographer.company}</p>
             <Link href="/photos" className="brass-link text-sm text-ink-dim hover:text-ink">All photos →</Link>
           </div>
           <div className="mt-3 grid grid-cols-3 gap-1.5 md:grid-cols-6">
@@ -133,7 +133,7 @@ export default async function EpkPage() {
               </a>
             ))}
           </div>
-          <p className="mt-2 text-xs text-ink-faint">Tap a photo for the 2400px file. Print-resolution originals on request. Photo credit: <a href={SITE.photographer.url} target="_blank" rel="noopener noreferrer" className="brass-link text-ink-dim">{SITE.photographer.name}</a>.</p>
+          <p className="mt-2 text-xs text-ink-faint">Tap a photo for the 2400px file. Print-resolution originals on request. Photo credit: <a href={SITE.photographer.url} target="_blank" rel="noopener noreferrer" className="brass-link text-ink-dim">{SITE.photographer.name} · {SITE.photographer.company}</a>.</p>
         </section>
 
         {/* stage plots + rider */}

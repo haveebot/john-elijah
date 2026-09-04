@@ -3,6 +3,7 @@ import { bookingCounts, listBookings, listUpcomingBookings, bookedRevenueThisYea
 import { listUpcomingShows } from "@/lib/db/shows";
 import { listOrders } from "@/lib/db/commerce";
 import { assetCount } from "@/lib/db/gallery";
+import { fileTotals } from "@/lib/db/files";
 import { query } from "@/lib/db/client";
 import { mailEnabled, mailTransportName } from "@/lib/mail";
 import { stripeEnabled } from "@/lib/stripe";
@@ -11,7 +12,7 @@ import { shippoEnabled } from "@/lib/shippo";
 export const dynamic = "force-dynamic";
 
 export default async function HqToday() {
-  const [counts, recent, upcoming, shows, orders, photos, revenue, subs] = await Promise.all([
+  const [counts, recent, upcoming, shows, orders, photos, revenue, subs, drive] = await Promise.all([
     bookingCounts(),
     listBookings(),
     listUpcomingBookings(6),
@@ -20,6 +21,7 @@ export default async function HqToday() {
     assetCount(),
     bookedRevenueThisYear(),
     query<{ count: string }>(`SELECT COUNT(*) AS count FROM subscribers`),
+    fileTotals(),
   ]);
 
   const open = (counts["inquiry"] ?? 0) + (counts["quoted"] ?? 0) + (counts["hold"] ?? 0);
@@ -103,7 +105,7 @@ export default async function HqToday() {
               <li className="px-5 py-3 text-sm text-ink-faint">Nothing dated yet.</li>
             ) : null}
           </ul>
-          <p className="mt-3 text-xs text-ink-faint">{photos} photos in the library.</p>
+          <p className="mt-3 text-xs text-ink-faint">{photos} photos in the library · {drive.count} files on the drive.</p>
         </section>
       </div>
 

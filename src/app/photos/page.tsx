@@ -51,11 +51,11 @@ export default async function PhotosPage() {
             <span key={c}>
               {i > 0 ? " · " : ""}
               {c === SITE.photographer.name ? (
-                <a href={SITE.photographer.url} target="_blank" rel="noopener noreferrer" className="brass-link text-ink">{c}</a>
+                <a href={SITE.photographer.url} target="_blank" rel="noopener noreferrer" className="brass-link text-ink">{c} · {SITE.photographer.company}</a>
               ) : c}
             </span>
           )) : (
-            <a href={SITE.photographer.url} target="_blank" rel="noopener noreferrer" className="brass-link text-ink">{SITE.photographer.name}</a>
+            <a href={SITE.photographer.url} target="_blank" rel="noopener noreferrer" className="brass-link text-ink">{SITE.photographer.name} · {SITE.photographer.company}</a>
           )}
         </p>
       </main>

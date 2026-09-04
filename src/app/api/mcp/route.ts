@@ -17,6 +17,7 @@ import { listReleases, listBandMembers, listPress, updateReleaseStory } from "@/
 import { listAllAssets, updateAsset } from "@/lib/db/gallery";
 import { listOrders, listAllProducts } from "@/lib/db/commerce";
 import { subscriberCount } from "@/lib/db/engagement";
+import { listFiles } from "@/lib/db/files";
 
 /**
  * MCP over HTTP (JSON-RPC 2.0) — agent access to John Elijah HQ.
@@ -46,6 +47,7 @@ const TOOLS = [
   { name: "tag_photo", description: "Set tags / alt / credit on a photo.", inputSchema: { type: "object", properties: { id: { type: "string" }, tags: { type: "array", items: { type: "string" } }, alt: { type: "string" }, credit: { type: "string" }, featured: { type: "boolean" } }, required: ["id"] } },
   { name: "list_products", description: "Merch catalog with variants + stock.", inputSchema: { type: "object", properties: {} } },
   { name: "list_orders", description: "Stripe orders.", inputSchema: { type: "object", properties: {} } },
+  { name: "list_files", description: "The shared drive (music, video, photos, designs, docs) with permanent links.", inputSchema: { type: "object", properties: { folder: { type: "string", enum: ["music", "video", "photos", "designs", "docs", "inbox"] } } } },
 ];
 
 async function callTool(name: string, args: Json): Promise<unknown> {
@@ -138,6 +140,8 @@ async function callTool(name: string, args: Json): Promise<unknown> {
       return listAllProducts();
     case "list_orders":
       return listOrders();
+    case "list_files":
+      return listFiles(typeof args.folder === "string" ? args.folder : undefined);
     default:
       throw new Error(`unknown tool: ${name}`);
   }
