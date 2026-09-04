@@ -31,6 +31,7 @@ uniform float uAspect;
 uniform float uDPR;
 uniform float uFit;
 uniform float uSizeScale;
+uniform float uYOff;
 uniform mediump vec2 uPointer;
 uniform mediump float uScatter;
 uniform mediump float uGrab;
@@ -56,7 +57,7 @@ void main() {
     return;
   }
 
-  vec2 target = aTarget * uFit;
+  vec2 target = aTarget * uFit + vec2(0.0, uYOff);
   // stagger across the mark left→right; everything is locked by ~2.3s
   float dAssemble = 0.1 + aOrder * 1.2;
   float tA = clamp((uTime - dAssemble) / 1.0, 0.0, 1.0);
@@ -181,12 +182,16 @@ void main() {
     w *= uDecay;
   }
   rays /= float(SAMPLES);
-  // slow shimmer along the beams so the light breathes
+  // the light moves: a slow beam sweeps around the sign, a second one counter-rotates,
+  // and a fine shimmer breathes along every shaft
   float ang = atan((vUv.y - uCenter.y), (vUv.x - uCenter.x) * uAspect + 1e-4);
-  float shimmer = 0.85 + 0.15 * sin(uTime * 0.6 + ang * 6.0);
+  float sweep1 = pow(0.5 + 0.5 * cos(ang - uTime * 0.28), 7.0);
+  float sweep2 = pow(0.5 + 0.5 * cos(ang + uTime * 0.17 + 2.4), 10.0);
+  float shimmer = 0.8 + 0.2 * sin(uTime * 0.7 + ang * 7.0);
+  float motion = (0.55 + 1.1 * sweep1 + 0.8 * sweep2) * shimmer;
 
   vec3 brass = vec3(0.851, 0.643, 0.255);
-  vec3 col = specks + rays * uExposure * shimmer * mix(vec3(1.0), brass, 0.35);
+  vec3 col = specks + rays * uExposure * motion * mix(vec3(1.0), brass, 0.35);
   // valid premultiplied output (rgb <= alpha) so every browser composites it the same:
   // light over the photo, brightest where the sign is, nothing where there is no light
   vec3 c = min(col, vec3(1.0));
@@ -239,7 +244,7 @@ function buildBuffers(lines: string[], font: string, inkCount: number, dustCount
     const nx = (x / W - 0.5) * 2;
     const ny = -(y / H - 0.5) * 2 * (H / W);
     targets[i * 2] = nx * SCALE;
-    targets[i * 2 + 1] = ny * SCALE + 0.12;
+    targets[i * 2 + 1] = ny * SCALE;
     const a = Math.random() * Math.PI * 2;
     seeds[i * 3] = Math.cos(a);
     seeds[i * 3 + 1] = Math.sin(a) - 0.6;
@@ -325,7 +330,7 @@ export function StageIdent({ onReady }: { onReady?: (ready: boolean) => void }) 
       const u = (p: WebGLProgram, n: string) => gl.getUniformLocation(p, n);
       const U = {
         time: u(prog, "uTime"), aspect: u(prog, "uAspect"), dpr: u(prog, "uDPR"), burst: u(prog, "uBurst"), fit: u(prog, "uFit"),
-        sizeScale: u(prog, "uSizeScale"), pointer: u(prog, "uPointer"), scatter: u(prog, "uScatter"), grab: u(prog, "uGrab"), paint: u(prog, "uPaint"),
+        sizeScale: u(prog, "uSizeScale"), yOff: u(prog, "uYOff"), pointer: u(prog, "uPointer"), scatter: u(prog, "uScatter"), grab: u(prog, "uGrab"), paint: u(prog, "uPaint"),
       };
       const C = { light: u(comp, "uLight"), center: u(comp, "uCenter"), exposure: u(comp, "uExposure"), decay: u(comp, "uDecay"), aspect: u(comp, "uAspect"), time: u(comp, "uTime") };
 
@@ -347,11 +352,16 @@ export function StageIdent({ onReady }: { onReady?: (ready: boolean) => void }) 
       let aspect = 1;
       let fit = 1;
       let lw = 1, lh = 1;
+      // the name sits in the upper part of the hero; the copy block lives below ~-0.3
+      const yOff = isMobile ? 0.34 : 0.30;
       const resize = () => {
         canvas.width = Math.round(canvas.clientWidth * dpr);
         canvas.height = Math.round(canvas.clientHeight * dpr);
         aspect = canvas.width / Math.max(canvas.height, 1);
-        fit = Math.min(1, (0.92 * aspect) / 1.55, 0.78 / Math.max(halfH, 0.01));
+        const hh = Math.max(halfH, 0.01);
+        fit = Math.min(1, (0.92 * aspect) / 1.55, (0.94 - yOff) / hh, (yOff + 0.22) / hh);
+        dbg.fit = fit;
+        dbg.yOff = yOff;
         lw = Math.max(1, Math.round(canvas.width * LIGHT_SCALE));
         lh = Math.max(1, Math.round(canvas.height * LIGHT_SCALE));
         gl.bindTexture(gl.TEXTURE_2D, lightTex);
@@ -408,10 +418,10 @@ export function StageIdent({ onReady }: { onReady?: (ready: boolean) => void }) 
         const burst = Math.max(0, Math.sin(Math.min(Math.max(t - 2.2, 0) / 1.4, 1) * Math.PI)) * (t < 3.8 ? 1 : 0.1 + 0.08 * Math.sin(t * 0.35));
         // ray exposure: nothing before the sign lights, big burst at landing, steady after
         const lit = Math.min(1, Math.max(0, (t - 2.2) / 1.1));
-        const steady = 0.55 + 0.08 * Math.sin(t * 0.4);
-        const flare = Math.max(0, Math.sin(Math.min(Math.max(t - 2.25, 0) / 1.6, 1) * Math.PI)) * 1.3;
+        const steady = 1.05 + 0.15 * Math.sin(t * 0.4);
+        const flare = Math.max(0, Math.sin(Math.min(Math.max(t - 2.25, 0) / 1.6, 1) * Math.PI)) * 1.6;
         const exposure = lit * steady + flare;
-        const decay = 0.955 + 0.02 * Math.min(1, flare);
+        const decay = 0.962 + 0.015 * Math.min(1, flare);
 
         scatterNow += (scatterTarget - scatterNow) * (scatterTarget > scatterNow ? 0.3 : 0.07);
         grabNow += (grabTarget - grabNow) * (grabTarget > grabNow ? 0.38 : 0.16);
@@ -438,6 +448,7 @@ export function StageIdent({ onReady }: { onReady?: (ready: boolean) => void }) 
         gl.uniform1f(U.burst, burst);
         gl.uniform1f(U.fit, fit);
         gl.uniform1f(U.sizeScale, LIGHT_SCALE);
+        gl.uniform1f(U.yOff, yOff);
         gl.uniform2f(U.pointer, px, py);
         gl.uniform1f(U.scatter, scatterNow);
         gl.uniform1f(U.grab, grabNow);
@@ -458,7 +469,7 @@ export function StageIdent({ onReady }: { onReady?: (ready: boolean) => void }) 
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, lightTex);
         gl.uniform1i(C.light, 0);
-        gl.uniform2f(C.center, 0.5, 0.5 + (0.12 * fit) / 2);
+        gl.uniform2f(C.center, 0.5, 0.5 + yOff / 2);
         gl.uniform1f(C.exposure, exposure);
         gl.uniform1f(C.decay, decay);
         gl.uniform1f(C.aspect, aspect);

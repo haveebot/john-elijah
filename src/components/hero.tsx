@@ -39,8 +39,8 @@ export function Hero({ photo }: { photo: { url: string; alt: string } | null }) 
       {/* the house lights: dark until the specks run, then a 700ms lift */}
       <div className={`pointer-events-none absolute inset-0 z-20 bg-canvas transition-opacity duration-700 ease-out ${lit ? "opacity-0" : "opacity-100"}`} aria-hidden />
 
-      {/* the ident lives in the upper ~70% of the frame */}
-      <div className="absolute inset-x-0 top-0 h-[72%]">
+      {/* the ident owns the whole hero; the name is held in the upper part by uYOff */}
+      <div className="absolute inset-0">
         <StageIdent onReady={onReady} />
       </div>
 
