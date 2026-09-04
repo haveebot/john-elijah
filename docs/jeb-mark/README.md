@@ -1,32 +1,10 @@
-# John Elijah Band mark, first pass (2026-09-04)
+# John Elijah Band × Lone Star, co-brand pass (2026-09-04)
 
-Built to blend with the official Lone Star Beer shield (palette sampled from Pabst's keyline file: red #b01f25, gold #c7a660, cream #f0efeb).
+Built to sit with the official Lone Star Beer shield. Palette sampled from Pabst's keyline file: red #b01f25, gold #c7a660, cream #f0efeb. For Collie's review; the same files are in HQ under Files, Designs.
 
-- A-crest: companion shield, JOHN / ELIJAH / BAND mirrors LONE / STAR / BEER. Rye + Alfa Slab One + Bebas Neue.
-- B-stack: layered marquee wordmark (cream fill, gold edge, deep red shadow), red BAND bar, Yellowtail script, co-brand line with the LS icon.
-- C-seal: round seal, faceted star, ribbon.
-- pair-*: side by side with the official LS keyline logo. board.png is the overview.
+- A-crest: companion shield, JOHN / ELIJAH / BAND mirrors LONE / STAR / BEER. A-crest-clean drops the city line.
+- B-stack: layered marquee wordmark with the Lone Star icon on the artist credit.
+- C-seal: round seal with the faceted star and a ribbon.
+- pair-*: side by side with the official Lone Star keyline logo, on black and on cream. board.png is the overview.
 
-All text is converted to outlines (fontTools), so the SVGs need no fonts. Fonts used (Google, OFL): Rye, Alfa Slab One, Bebas Neue, Yellowtail. Regenerate with `python3 build.py` after pointing FONTS in textpath.py at a folder holding those TTFs and putting the four official LS PNGs in `ls/`.
-
-## Set two, blues and classic rock (2026-09-04, later)
-
-Less Texas country, more record-culture and stage. Site palette (black, cream, brass) plus warm soul tones and one blue.
-
-- D-marquee: name in lights, ties to the site hero. Sigmar One letters filled with bulbs (bulb grid sampled from a PIL mask).
-- E-chrome: amp-badge chrome script on tolex. Lobster.
-- F-label45: 45 rpm record label in mustard and burnt orange. Archivo Black + Oswald.
-- G-block: Blue Note style typographic block. Anton + Oswald, one electric blue.
-- H-pick: JE monogram with a bolt on a guitar pick. Sigmar One.
-- I-revue: 70s soul revue, misregistered print with a halftone fade. Shrikhand + Bowlby One + Yellowtail.
-
-Regenerate with `python3 build2.py` (needs the extra Google fonts listed at the top of the specimen: Sigmar One, Lobster, Archivo Black, Anton, Oswald 700, Shrikhand, Bowlby One).
-
-## Set three, concept first (2026-09-04, evening)
-
-Drawn geometry and light fields, no typeface as the subject. Each comes from John's own material.
-
-- 1b-almost: the name as a star chart, stroke skeleton sampled into stars with constellation lines; `lift` fully formed, `sweep` dissolving on the right. Raster (numpy), regenerate with build3b.py.
-- 2b-ligature: Take and Give. One spine shared by J and E, arms right, hook left. Two-tone and mono-in-circle. Vector.
-- 3b-one-line: the signature as a single stroke (skeleton of a connected script, dots kept as two beats), then a signal burst, then flat. Vector.
-- 4b-haze: light as the subject; the name at the horizon, eaten by the sun's core, broken glints on the water. Raster.
+All text is outlined, so the SVGs need no fonts. Regenerate with `python3 build.py` (Rye, Alfa Slab One, Bebas Neue, Yellowtail TTFs in the folder named in textpath.py; official LS PNGs in `ls/`).
